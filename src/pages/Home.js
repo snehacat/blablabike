@@ -292,7 +292,7 @@ const CTASection = ({ user, navigate, onSignupClick }) => (
       <div className="flex items-center justify-center gap-6 mt-10 flex-wrap">
         {[
           { icon: Shield, text: 'OTP Verified Users' },
-          { icon: Star, text: '4.8 Avg Rating' },
+          { icon: Star, text: '4.9 Avg Rating' },
           { icon: Zap, text: 'Instant Booking' },
         ].map(({ icon: Icon, text }, i) => (
           <div key={i} className="flex items-center gap-2 text-sm text-gray-400">
