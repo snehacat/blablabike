@@ -1,0 +1,137 @@
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { Menu, X, Zap } from 'lucide-react';
+
+const Navbar = ({ user, onLoginClick, onSignupClick, onLogout }) => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const location = useLocation();
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const navLinks = [
+    { label: 'Home', to: '/' },
+    { label: 'Browse Rides', to: '/browse' },
+    { label: 'Post a Ride', to: '/post-ride' },
+    { label: 'Admin', to: '/admin' },
+  ];
+
+  const isActive = (path) => location.pathname === path;
+
+  return (
+    <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'glass-dark shadow-2xl' : 'bg-transparent'}`}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          {/* Logo */}
+          <Link to="/" className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-DEFAULT to-orange-light flex items-center justify-center glow-orange-sm">
+              <Zap size={16} className="text-white" fill="white" />
+            </div>
+            <span className="text-xl font-bold tracking-tight">
+              <span className="text-white">Bla</span>
+              <span className="gradient-text">Bla</span>
+              <span className="text-white">Bike</span>
+            </span>
+          </Link>
+
+          {/* Desktop links */}
+          <div className="hidden md:flex items-center gap-1">
+            {navLinks.map(({ label, to }) => (
+              <Link
+                key={to}
+                to={to}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  isActive(to)
+                    ? 'text-orange-DEFAULT bg-orange-DEFAULT bg-opacity-10'
+                    : 'text-gray-300 hover:text-white hover:bg-white hover:bg-opacity-5'
+                }`}
+              >
+                {label}
+              </Link>
+            ))}
+          </div>
+
+          {/* Auth */}
+          <div className="hidden md:flex items-center gap-3">
+            {user ? (
+              <div className="flex items-center gap-3">
+                <Link to="/dashboard" className="flex items-center gap-2 px-3 py-1.5 rounded-xl glass hover:bg-white hover:bg-opacity-10 transition-all">
+                  <img
+                    src={user.avatar || `https://i.pravatar.cc/32?u=${user.email}`}
+                    alt=""
+                    className="w-7 h-7 rounded-full object-cover ring-2 ring-orange-DEFAULT ring-opacity-50"
+                  />
+                  <span className="text-sm font-medium text-white">
+                    {user.fullName?.split(' ')[0] || user.email?.split('@')[0]}
+                  </span>
+                </Link>
+                <button
+                  onClick={onLogout}
+                  className="btn-outline px-4 py-1.5 text-sm"
+                >
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <>
+                <button
+                  onClick={onLoginClick}
+                  className="btn-outline px-5 py-2 text-sm"
+                >
+                  Login
+                </button>
+                <button
+                  onClick={onSignupClick}
+                  className="btn-primary px-5 py-2 text-sm"
+                >
+                  <span>Sign Up Free</span>
+                </button>
+              </>
+            )}
+          </div>
+
+          <button className="md:hidden text-gray-300 hover:text-white" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile menu */}
+      {isMenuOpen && (
+        <div className="md:hidden glass-dark border-t border-white border-opacity-10 px-4 py-4 space-y-1">
+          {navLinks.map(({ label, to }) => (
+            <Link
+              key={to}
+              to={to}
+              onClick={() => setIsMenuOpen(false)}
+              className={`block px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                isActive(to) ? 'text-orange-DEFAULT bg-orange-DEFAULT bg-opacity-10' : 'text-gray-300 hover:text-white hover:bg-white hover:bg-opacity-5'
+              }`}
+            >
+              {label}
+            </Link>
+          ))}
+          <div className="pt-2 border-t border-white border-opacity-10 space-y-2">
+            {user ? (
+              <>
+                <Link to="/dashboard" onClick={() => setIsMenuOpen(false)} className="block px-4 py-2.5 text-sm text-gray-300">Dashboard</Link>
+                <button onClick={() => { onLogout(); setIsMenuOpen(false); }} className="w-full btn-outline px-4 py-2.5 text-sm text-left">Logout</button>
+              </>
+            ) : (
+              <>
+                <button onClick={() => { onLoginClick(); setIsMenuOpen(false); }} className="w-full btn-outline px-4 py-2.5 text-sm">Login</button>
+                <button onClick={() => { onSignupClick(); setIsMenuOpen(false); }} className="w-full btn-primary px-4 py-2.5 text-sm"><span>Sign Up Free</span></button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </nav>
+  );
+};
+
+export default Navbar;
