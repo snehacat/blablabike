@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -69,6 +69,17 @@ const App = () => {
   };
 
   const handleUserUpdate = (updated) => setUser(updated);
+
+  // Sync user state with localStorage
+  useEffect(() => {
+    if (user) {
+      console.log('App.js - Syncing user to localStorage:', user);
+      localStorage.setItem('user', JSON.stringify(user));
+    } else {
+      console.log('App.js - Clearing user from localStorage');
+      localStorage.removeItem('user');
+    }
+  }, [user]);
 
   const navProps = {
     user,

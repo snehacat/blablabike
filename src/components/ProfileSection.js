@@ -87,15 +87,13 @@ const ProfileSection = ({ user, onUpdateProfile, onClose }) => {
             
             setSuccessMessage('Profile picture updated successfully!');
             
-            // Update user data in parent component and localStorage
+            // Update user data in parent component (App.js will handle localStorage)
             const updatedUser = {
               ...user,
               avatar: result.profilePictureUrl || previewImage
             };
             console.log('ProfileSection - Updating user with avatar:', updatedUser.avatar);
             onUpdateProfile(updatedUser);
-            localStorage.setItem('user', JSON.stringify(updatedUser));
-            console.log('ProfileSection - Saved to localStorage:', JSON.stringify(updatedUser));
 
             // Reset after 2 seconds
             setTimeout(() => {
@@ -114,7 +112,6 @@ const ProfileSection = ({ user, onUpdateProfile, onClose }) => {
               avatar: previewImage
             };
             onUpdateProfile(updatedUser);
-            localStorage.setItem('user', JSON.stringify(updatedUser));
             setSuccessMessage('Profile picture updated! (Backend integration pending)');
             
             setTimeout(() => {
@@ -133,7 +130,6 @@ const ProfileSection = ({ user, onUpdateProfile, onClose }) => {
             avatar: previewImage
           };
           onUpdateProfile(updatedUser);
-          localStorage.setItem('user', JSON.stringify(updatedUser));
           setSuccessMessage('Profile picture updated! (Offline mode)');
           
           setTimeout(() => {
@@ -146,13 +142,12 @@ const ProfileSection = ({ user, onUpdateProfile, onClose }) => {
         // Demo mode for development
         await new Promise(resolve => setTimeout(resolve, 1500));
         
-        // Update user data in parent component and localStorage with the preview image
+        // Update user data in parent component (App.js will handle localStorage)
         const updatedUser = {
           ...user,
           avatar: previewImage
         };
         onUpdateProfile(updatedUser);
-        localStorage.setItem('user', JSON.stringify(updatedUser));
 
         setSuccessMessage('Profile picture updated successfully! (Demo mode)');
 
