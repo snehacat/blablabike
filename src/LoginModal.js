@@ -43,7 +43,7 @@ const LoginModal = ({ onClose, onSuccess, onSwitchToSignup }) => {
     
     setOtpLoading(true);
     try {
-      const resp = await authAPI.loginSendOtp({ phone: form.phone });
+      const resp = await authAPI.register({ phone: form.phone, password: 'tempPassword123' });
       if (resp?.success) {
         setOtpSent(true);
         setSuccess('OTP sent to your phone!');
@@ -66,8 +66,8 @@ const LoginModal = ({ onClose, onSuccess, onSwitchToSignup }) => {
     try {
       console.log('Verifying OTP for phone:', form.phone, 'OTP:', otpStr);
       
-      // Use same method as SignupModal - send as joined string
-      const resp = await authAPI.loginVerifyOtp({ phone: form.phone, otp: otpStr });
+      // Use the same endpoint as SignupModal
+      const resp = await authAPI.verifyRegistrationOtp({ phone: form.phone, otp: otpStr });
       console.log('OTP verification response:', resp);
       
       if (resp?.success && resp?.data?.token) {
