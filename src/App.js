@@ -15,7 +15,14 @@ import Notification from './components/Notification';
 
 const App = () => {
   const [user, setUser] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('user')); } catch { return null; }
+    try {
+      const userData = JSON.parse(localStorage.getItem('user'));
+      console.log('App.js - User data from localStorage:', userData);
+      return userData;
+    } catch (error) {
+      console.log('App.js - Error parsing user data:', error);
+      return null;
+    }
   });
   const [showLogin, setShowLogin] = useState(false);
   const [showSignup, setShowSignup] = useState(false);

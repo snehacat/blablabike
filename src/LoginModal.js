@@ -41,11 +41,14 @@ const LoginModal = ({ onClose, onSuccess, onSwitchToSignup }) => {
   };
 
   const handleVerifyOtp = async () => {
-    if (!form.otp) { setError('Please enter the OTP.'); return; }
+    if (!otp) { setError('Please enter the OTP.'); return; }
     
     setLoading(true);
     try {
-      const resp = await authAPI.loginVerifyOtp({ phone: form.phone, otp: form.otp });
+      console.log('Verifying OTP for phone:', form.phone, 'OTP:', otp);
+      const resp = await authAPI.loginVerifyOtp({ phone: form.phone, otp: otp });
+      console.log('OTP verification response:', resp);
+      
       if (resp?.success && resp?.data?.token) {
         const authData = resp.data;
         localStorage.setItem('token', authData.token);

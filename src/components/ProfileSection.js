@@ -92,8 +92,10 @@ const ProfileSection = ({ user, onUpdateProfile, onClose }) => {
               ...user,
               avatar: result.profilePictureUrl || previewImage
             };
+            console.log('ProfileSection - Updating user with avatar:', updatedUser.avatar);
             onUpdateProfile(updatedUser);
             localStorage.setItem('user', JSON.stringify(updatedUser));
+            console.log('ProfileSection - Saved to localStorage:', JSON.stringify(updatedUser));
 
             // Reset after 2 seconds
             setTimeout(() => {

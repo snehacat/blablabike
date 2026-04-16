@@ -69,6 +69,11 @@ const Navbar = ({ user, onLoginClick, onSignupClick, onLogout, onProfileClick })
                       src={user.avatar || `https://i.pravatar.cc/32?u=${user.email}`}
                       alt=""
                       className="w-7 h-7 rounded-full object-cover ring-2 ring-orange-DEFAULT ring-opacity-50"
+                      onError={(e) => {
+                        console.log('Navbar avatar error:', e);
+                        console.log('User data:', user);
+                        console.log('Avatar URL:', user.avatar);
+                      }}
                     />
                     <span className="text-sm font-medium text-white">
                       {user.fullName?.split(' ')[0] || user.email?.split('@')[0]}
