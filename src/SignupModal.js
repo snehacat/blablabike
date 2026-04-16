@@ -165,7 +165,7 @@ const SignupModal = ({ onClose, onSuccess, onSwitchToLogin }) => {
                 {[
                   { label: 'Full Name', name: 'fullName', type: 'text', placeholder: 'John Doe' },
                   { label: 'Email', name: 'email', type: 'email', placeholder: 'you@example.com' },
-                  { label: 'Phone (with country code)', name: 'phone', type: 'tel', placeholder: '+911234567890' },
+                  { label: 'Phone', name: 'phone', type: 'tel', placeholder: '1234567890' },
                 ].map(({ label, name, type, placeholder }) => (
                   <div key={name}>
                     <label className="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wide">{label}</label>

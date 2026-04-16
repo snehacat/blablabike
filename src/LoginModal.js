@@ -217,7 +217,7 @@ const LoginModal = ({ onClose, onSuccess, onSwitchToSignup }) => {
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wide">Phone</label>
                   <input type="tel" name="phone" value={form.phone} onChange={handleChange}
-                    placeholder="6876543210" className="input-dark w-full px-4 py-3 rounded-xl text-sm" required disabled />
+                    placeholder="1234567890" className="input-dark w-full px-4 py-3 rounded-xl text-sm" required disabled />
                 </div>
                 
                 <div>
@@ -257,7 +257,7 @@ const LoginModal = ({ onClose, onSuccess, onSwitchToSignup }) => {
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wide">Phone</label>
                   <input type="tel" name="phone" value={form.phone} onChange={handleChange}
-                    placeholder="6876543210" className="input-dark w-full px-4 py-3 rounded-xl text-sm" required />
+                    placeholder="1234567890" className="input-dark w-full px-4 py-3 rounded-xl text-sm" required />
                 </div>
                 
                 {loginMethod === 'password' && (
