@@ -5,6 +5,12 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
+// Separate API instance for login OTP (no auth headers needed)
+const publicApi = axios.create({
+  baseURL: process.env.REACT_APP_API_BASE_URL || 'https://bike-cytc.onrender.com/api/auth',
+  headers: { 'Content-Type': 'application/json' },
+});
+
 const authAPI = {
   // Registration (sends OTP; OTP verification completes account creation)
   register: async (userData) => {
@@ -26,12 +32,12 @@ const authAPI = {
 
   // Login with phone + OTP (if you want to add OTP login later)
   loginSendOtp: async (phone) => {
-    const res = await api.post('/login/send-otp', { phone });
+    const res = await publicApi.post('/login/send-otp', { phone });
     return res.data; // { success, message, data: null }
   },
   loginVerifyOtp: async ({ phone, otp }) => {
     // Use the exact same format as verifyRegistrationOtp - simple JSON object
-    const res = await api.post('/login/verify-otp', { phone, otp });
+    const res = await publicApi.post('/login/verify-otp', { phone, otp });
     return res.data; // { success, message, data: { token, fullName, email, phone, ... } }
   },
 };
