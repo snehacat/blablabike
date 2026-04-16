@@ -82,7 +82,7 @@ const HeroSection = ({ bgIndex, setBgIndex, stats, user, navigate, onSignupClick
 
           <p className="text-lg text-gray-300 mb-8 leading-relaxed max-w-lg fade-up-3">
             Post your daily 2-wheeler commute and let someone going the same way join you.
-            Save fuel. Make friends. Split the cost.
+            Save fuel. Split the cost.
           </p>
 
           <div className="grid grid-cols-3 gap-3 mb-8 fade-up-3">
