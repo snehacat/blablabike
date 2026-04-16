@@ -30,7 +30,10 @@ const authAPI = {
     return res.data; // { success, message, data: null }
   },
   loginVerifyOtp: async ({ phone, otp }) => {
-    const res = await api.post('/login/verify-otp', { phone, otp });
+    const requestData = { phone, otp };
+    console.log('authAPI - Sending OTP verification request:', requestData);
+    const res = await api.post('/login/verify-otp', requestData);
+    console.log('authAPI - OTP verification response:', res.data);
     return res.data; // { success, message, data: { token, fullName, email, phone, ... } }
   },
 };

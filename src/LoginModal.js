@@ -46,8 +46,37 @@ const LoginModal = ({ onClose, onSuccess, onSwitchToSignup }) => {
     setLoading(true);
     try {
       console.log('Verifying OTP for phone:', form.phone, 'OTP:', otp);
-      const resp = await authAPI.loginVerifyOtp({ phone: form.phone, otp: otp });
-      console.log('OTP verification response:', resp);
+      const requestData = { phone: form.phone, otp: otp };
+      console.log('Request data being sent:', JSON.stringify(requestData));
+      
+      let resp;
+      try {
+        resp = await authAPI.loginVerifyOtp(requestData);
+        console.log('OTP verification response:', resp);
+      } catch (firstError) {
+        console.log('First attempt failed, trying different format:', firstError);
+        
+        // Try with OTP as string explicitly
+        try {
+          const stringRequest = { phone: form.phone, otp: otp.toString() };
+          console.log('Trying with string OTP:', JSON.stringify(stringRequest));
+          resp = await authAPI.loginVerifyOtp(stringRequest);
+          console.log('String OTP response:', resp);
+        } catch (secondError) {
+          console.log('Second attempt failed, trying as number:', secondError);
+          
+          // Try with OTP as number
+          try {
+            const numberRequest = { phone: form.phone, otp: parseInt(otp) };
+            console.log('Trying with number OTP:', JSON.stringify(numberRequest));
+            resp = await authAPI.loginVerifyOtp(numberRequest);
+            console.log('Number OTP response:', resp);
+          } catch (thirdError) {
+            console.log('All formats failed:', thirdError);
+            throw thirdError;
+          }
+        }
+      }
       
       if (resp?.success && resp?.data?.token) {
         const authData = resp.data;
