@@ -212,7 +212,7 @@ const LoginModal = ({ onClose, onSuccess, onSwitchToSignup }) => {
             </button>
           </div>
 
-          {loginMethod === 'otp' && otpSent && (
+          {loginMethod === 'otp' && otpSent ? (
               <form onSubmit={handleVerifyOtp} className="space-y-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wide">Phone</label>
