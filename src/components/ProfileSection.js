@@ -40,23 +40,66 @@ const ProfileSection = ({ user, onUpdateProfile, onClose }) => {
     setSuccessMessage('');
 
     try {
-      // Simulate upload process (for testing without backend)
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Check if we're in production and have a real backend
+      const isProduction = process.env.NODE_ENV === 'production';
       
-      // Update user data in parent component with the preview image
-      onUpdateProfile({
-        ...user,
-        avatar: previewImage
-      });
+      if (isProduction) {
+        // Real backend upload for production
+        const response = await fetch(previewImage);
+        const blob = await response.blob();
+        const file = new File([blob], 'profile.jpg', { type: 'image/jpeg' });
 
-      setSuccessMessage('Profile picture updated successfully! (Demo mode)');
+        // Create FormData for file upload
+        const formData = new FormData();
+        formData.append('profilePicture', file);
 
-      // Reset after 2 seconds
-      setTimeout(() => {
-        setIsEditing(false);
-        setPreviewImage(null);
-        setSuccessMessage('');
-      }, 2000);
+        // Upload to backend
+        const uploadResponse = await fetch(`${process.env.REACT_APP_API_BASE_URL}/user/profile-picture`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: formData
+        });
+
+        if (uploadResponse.ok) {
+          const result = await uploadResponse.json();
+          setSuccessMessage('Profile picture updated successfully!');
+          
+          // Update user data in parent component
+          onUpdateProfile({
+            ...user,
+            avatar: result.profilePictureUrl || previewImage
+          });
+
+          // Reset after 2 seconds
+          setTimeout(() => {
+            setIsEditing(false);
+            setPreviewImage(null);
+            setSuccessMessage('');
+          }, 2000);
+        } else {
+          throw new Error('Upload failed');
+        }
+      } else {
+        // Demo mode for development
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        // Update user data in parent component with the preview image
+        onUpdateProfile({
+          ...user,
+          avatar: previewImage
+        });
+
+        setSuccessMessage('Profile picture updated successfully! (Demo mode)');
+
+        // Reset after 2 seconds
+        setTimeout(() => {
+          setIsEditing(false);
+          setPreviewImage(null);
+          setSuccessMessage('');
+        }, 2000);
+      }
     } catch (error) {
       console.error('Upload error:', error);
       setSuccessMessage('Failed to upload profile picture. Please try again.');

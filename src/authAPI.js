@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://bike-cytc.onrender.com/api/auth',
+  baseURL: process.env.REACT_APP_API_BASE_URL || 'https://bike-cytc.onrender.com/api/auth',
   headers: { 'Content-Type': 'application/json' },
 });
 
