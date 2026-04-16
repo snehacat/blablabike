@@ -36,10 +36,7 @@ const Home = ({ user, onSignupClick, onLoginClick, onProfileUpdate }) => {
     fetchData();
   }, []);
 
-  const handleProfileClick = () => {
-    setShowProfile(true);
-  };
-
+  
   const handleProfileUpdate = (updatedUser) => {
     onProfileUpdate(updatedUser);
   };
