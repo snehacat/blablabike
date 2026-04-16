@@ -13,9 +13,9 @@ const Footer = () => (
               <Zap size={16} className="text-white" fill="white" />
             </div>
             <span className="text-xl font-bold">
-              <span className="text-white">Bla</span>
-              <span className="gradient-text">Bla</span>
               <span className="text-white">Bike</span>
+              <span className="gradient-text">Pool</span>
+              <span className="text-white">ing</span>
             </span>
           </div>
           <p className="text-gray-500 text-sm leading-relaxed max-w-xs">
