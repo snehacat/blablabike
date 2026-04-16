@@ -38,15 +38,20 @@ const LoginModal = ({ onClose, onSuccess, onSwitchToSignup }) => {
 
   const handleSendOtp = async () => {
     if (!form.phone) { setError('Please enter your phone number.'); return; }
-    const phoneOk = /^\+?\d{10,15}$/.test(form.phone);
-    if (!phoneOk) { setError('Phone must be valid (e.g. 6876543210).'); return; }
+    // More lenient phone validation - just check it's mostly digits
+    const phoneOk = /^\d{10,15}$/.test(form.phone.replace(/\D/g, ''));
+    if (!phoneOk) { setError('Phone must be 10-15 digits (e.g. 1234567890).'); return; }
     
     setOtpLoading(true);
+    setError('');
     try {
-      const resp = await authAPI.register({ phone: form.phone, password: 'tempPassword123' });
+      // Use loginSendOtp endpoint instead of register
+      const resp = await authAPI.loginSendOtp({ phone: form.phone });
       if (resp?.success) {
         setOtpSent(true);
         setSuccess('OTP sent to your phone!');
+        // Focus on first OTP input
+        setTimeout(() => otpRefs[0].current?.focus(), 50);
       } else {
         setError(resp?.message || 'Failed to send OTP.');
       }
@@ -66,8 +71,8 @@ const LoginModal = ({ onClose, onSuccess, onSwitchToSignup }) => {
     try {
       console.log('Verifying OTP for phone:', form.phone, 'OTP:', otpStr);
       
-      // Use the same endpoint as SignupModal
-      const resp = await authAPI.verifyRegistrationOtp({ phone: form.phone, otp: otpStr });
+      // Use the correct login OTP verification endpoint
+      const resp = await authAPI.loginVerifyOtp({ phone: form.phone, otp: otpStr });
       console.log('OTP verification response:', resp);
       
       if (resp?.success && resp?.data?.token) {
