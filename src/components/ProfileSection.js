@@ -42,29 +42,49 @@ const ProfileSection = ({ user, onUpdateProfile, onClose }) => {
     try {
       // Check if we're in production and have a real backend
       const isProduction = process.env.NODE_ENV === 'production';
+      console.log('Production mode:', isProduction);
+      console.log('API Base URL:', process.env.REACT_APP_API_BASE_URL);
+      console.log('User token:', localStorage.getItem('token') ? 'exists' : 'missing');
       
       if (isProduction) {
         // Real backend upload for production (with fallback)
         try {
+          console.log('Starting production upload...');
+          
           const response = await fetch(previewImage);
+          console.log('Fetch response status:', response.status);
+          
           const blob = await response.blob();
+          console.log('Blob created, size:', blob.size);
+          
           const file = new File([blob], 'profile.jpg', { type: 'image/jpeg' });
+          console.log('File created:', file.name, file.type, file.size);
 
           // Create FormData for file upload
           const formData = new FormData();
           formData.append('profilePicture', file);
+          console.log('FormData created with file:', file.name);
+
+          const uploadUrl = `${process.env.REACT_APP_API_BASE_URL}/user/profile-picture`;
+          console.log('Upload URL:', uploadUrl);
 
           // Upload to backend
-          const uploadResponse = await fetch(`${process.env.REACT_APP_API_BASE_URL}/user/profile-picture`, {
+          const uploadResponse = await fetch(uploadUrl, {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
+              'Authorization': `Bearer ${localStorage.getItem('token')}`,
+              'Content-Type': 'multipart/form-data'
             },
             body: formData
           });
 
+          console.log('Upload response status:', uploadResponse.status);
+          console.log('Upload response headers:', [...uploadResponse.headers.entries()]);
+
           if (uploadResponse.ok) {
             const result = await uploadResponse.json();
+            console.log('Upload success result:', result);
+            
             setSuccessMessage('Profile picture updated successfully!');
             
             // Update user data in parent component
@@ -80,6 +100,9 @@ const ProfileSection = ({ user, onUpdateProfile, onClose }) => {
               setSuccessMessage('');
             }, 2000);
           } else {
+            const errorText = await uploadResponse.text();
+            console.error('Upload failed with response:', errorText);
+            
             // Backend endpoint doesn't exist - use fallback
             console.warn('Backend endpoint not available, using fallback');
             onUpdateProfile({
@@ -96,6 +119,8 @@ const ProfileSection = ({ user, onUpdateProfile, onClose }) => {
           }
         } catch (error) {
           console.error('Upload error:', error);
+          console.error('Error details:', error.message, error.stack);
+          
           // Fallback: still update with preview image
           onUpdateProfile({
             ...user,
