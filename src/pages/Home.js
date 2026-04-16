@@ -4,6 +4,7 @@ import { Search, Plus, ArrowRight, Shield, Zap, Star } from 'lucide-react';
 import { rideAPI, statsAPI } from '../api';
 import { mockRides } from '../mockData';
 import RideCard from '../components/RideCard';
+import ProfileSection from '../components/ProfileSection';
 
 const heroBgs = [
   'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1920&h=1080&fit=crop',
@@ -12,11 +13,12 @@ const heroBgs = [
   'https://images.unsplash.com/photo-1486325212027-8081e485255e?w=1920&h=1080&fit=crop',
 ];
 
-const Home = ({ user, onSignupClick, onLoginClick }) => {
+const Home = ({ user, onSignupClick, onLoginClick, onProfileUpdate }) => {
   const navigate = useNavigate();
   const [bgIndex, setBgIndex] = useState(0);
   const [openRides, setOpenRides] = useState([]);
   const [stats, setStats] = useState({ totalUsers: '6.2K+', totalRides: '24K+', fuelSaved: '18L+' });
+  const [showProfile, setShowProfile] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => setBgIndex(i => (i + 1) % heroBgs.length), 4000);
@@ -34,6 +36,14 @@ const Home = ({ user, onSignupClick, onLoginClick }) => {
     fetchData();
   }, []);
 
+  const handleProfileClick = () => {
+    setShowProfile(true);
+  };
+
+  const handleProfileUpdate = (updatedUser) => {
+    onProfileUpdate(updatedUser);
+  };
+
   return (
     <div className="mesh-bg min-h-screen">
       <HeroSection bgIndex={bgIndex} setBgIndex={setBgIndex} stats={stats} user={user} navigate={navigate} onSignupClick={onSignupClick} />
@@ -42,6 +52,15 @@ const Home = ({ user, onSignupClick, onLoginClick }) => {
       <OpenRidesSection openRides={openRides} user={user} onLoginClick={onLoginClick} navigate={navigate} />
       <FeaturesSection />
       <CTASection user={user} navigate={navigate} onSignupClick={onSignupClick} />
+      
+      {/* Profile Section */}
+      {showProfile && user && (
+        <ProfileSection
+          user={user}
+          onUpdateProfile={handleProfileUpdate}
+          onClose={() => setShowProfile(false)}
+        />
+      )}
     </div>
   );
 };

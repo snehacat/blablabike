@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Zap } from 'lucide-react';
 
-const Navbar = ({ user, onLoginClick, onSignupClick, onLogout }) => {
+const Navbar = ({ user, onLoginClick, onSignupClick, onLogout, onProfileClick }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
@@ -28,7 +28,7 @@ const Navbar = ({ user, onLoginClick, onSignupClick, onLogout }) => {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-DEFAULT to-orange-light flex items-center justify-center glow-orange-sm">
+            <div className="w-8 h-8 rounded-lg bg-orange-DEFAULT flex items-center justify-center">
               <Zap size={16} className="text-white" fill="white" />
             </div>
             <span className="text-xl font-bold tracking-tight">
@@ -38,65 +38,72 @@ const Navbar = ({ user, onLoginClick, onSignupClick, onLogout }) => {
             </span>
           </Link>
 
-          {/* Desktop links */}
-          <div className="hidden md:flex items-center gap-1">
-            {navLinks.map(({ label, to }) => (
-              <Link
-                key={to}
-                to={to}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  isActive(to)
-                    ? 'text-orange-DEFAULT bg-orange-DEFAULT bg-opacity-10'
-                    : 'text-gray-300 hover:text-white hover:bg-white hover:bg-opacity-5'
-                }`}
-              >
-                {label}
-              </Link>
-            ))}
-          </div>
-
-          {/* Auth */}
-          <div className="hidden md:flex items-center gap-3">
-            {user ? (
-              <div className="flex items-center gap-3">
-                <Link to="/dashboard" className="flex items-center gap-2 px-3 py-1.5 rounded-xl glass hover:bg-white hover:bg-opacity-10 transition-all">
-                  <img
-                    src={user.avatar || `https://i.pravatar.cc/32?u=${user.email}`}
-                    alt=""
-                    className="w-7 h-7 rounded-full object-cover ring-2 ring-orange-DEFAULT ring-opacity-50"
-                  />
-                  <span className="text-sm font-medium text-white">
-                    {user.fullName?.split(' ')[0] || user.email?.split('@')[0]}
-                  </span>
+          {/* Right side - Menu and Auth */}
+          <div className="flex items-center gap-4">
+            {/* Desktop links */}
+            <div className="hidden md:flex items-center gap-1">
+              {navLinks.map(({ label, to }) => (
+                <Link
+                  key={to}
+                  to={to}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    isActive(to)
+                      ? 'text-orange-DEFAULT bg-orange-DEFAULT bg-opacity-10'
+                      : 'text-gray-300 hover:text-white hover:bg-white hover:bg-opacity-5'
+                  }`}
+                >
+                  {label}
                 </Link>
-                <button
-                  onClick={onLogout}
-                  className="btn-outline px-4 py-1.5 text-sm"
-                >
-                  Logout
-                </button>
-              </div>
-            ) : (
-              <>
-                <button
-                  onClick={onLoginClick}
-                  className="btn-outline px-5 py-2 text-sm"
-                >
-                  Login
-                </button>
-                <button
-                  onClick={onSignupClick}
-                  className="btn-primary px-5 py-2 text-sm"
-                >
-                  <span>Sign Up Free</span>
-                </button>
-              </>
-            )}
-          </div>
+              ))}
+            </div>
 
-          <button className="md:hidden text-gray-300 hover:text-white" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
+            {/* Auth buttons outside menu */}
+            <div className="hidden md:flex items-center gap-3">
+              {user ? (
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={onProfileClick}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl glass hover:bg-white hover:bg-opacity-10 transition-all"
+                  >
+                    <img
+                      src={user.avatar || `https://i.pravatar.cc/32?u=${user.email}`}
+                      alt=""
+                      className="w-7 h-7 rounded-full object-cover ring-2 ring-orange-DEFAULT ring-opacity-50"
+                    />
+                    <span className="text-sm font-medium text-white">
+                      {user.fullName?.split(' ')[0] || user.email?.split('@')[0]}
+                    </span>
+                  </button>
+                  <button
+                    onClick={onLogout}
+                    className="btn-outline px-4 py-1.5 text-sm"
+                  >
+                    Logout
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <button
+                    onClick={onLoginClick}
+                    className="btn-outline px-5 py-2 text-sm"
+                  >
+                    Login
+                  </button>
+                  <button
+                    onClick={onSignupClick}
+                    className="btn-primary px-5 py-2 text-sm"
+                  >
+                    <span>Sign Up Free</span>
+                  </button>
+                </>
+              )}
+            </div>
+
+            {/* Mobile menu button */}
+            <button className="md:hidden text-gray-300 hover:text-white" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
         </div>
       </div>
 

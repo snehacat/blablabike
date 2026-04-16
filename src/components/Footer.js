@@ -52,7 +52,7 @@ const Footer = () => (
       </div>
       <div className="pt-6 flex flex-col md:flex-row items-center justify-between gap-3"
         style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-        <p className="text-gray-600 text-xs">© 2024 BlaBlaBike. All rights reserved.</p>
+        <p className="text-gray-600 text-xs">© 2024 BikePooling. All rights reserved.</p>
         <p className="text-gray-600 text-xs">Made with ❤️ for Indian commuters</p>
       </div>
     </div>

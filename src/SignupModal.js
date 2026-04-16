@@ -5,15 +5,19 @@ import authAPI from './authAPI';
 const SignupModal = ({ onClose, onSuccess, onSwitchToLogin }) => {
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({ fullName: '', email: '', phone: '', password: '' });
-  const [otp, setOtp] = useState(['', '', '', '']);
+  // Backend examples return 6-digit OTPs
+  const OTP_LENGTH = 6;
+  const [otp, setOtp] = useState(Array.from({ length: OTP_LENGTH }, () => ''));
   const [loading, setLoading] = useState(false);
   const [otpLoading, setOtpLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [registeredUser, setRegisteredUser] = useState(null);
-  const otpRefs = [useRef(), useRef(), useRef(), useRef()];
+  // Explicit refs to keep hook order stable across renders.
+  const otpRefs = [useRef(), useRef(), useRef(), useRef(), useRef(), useRef()];
 
-  const handleChange = (e) => { setForm({ ...form, [e.target.name]: e.target.value }); setError(''); };
+  
+  const handleChange = (e) => { setForm({ ...form, [e.target.name]: e.target.value }); setError(''); setSuccess(''); };
 
   const handleOtpChange = (index, value) => {
     if (!/^\d*$/.test(value)) return;
@@ -21,7 +25,7 @@ const SignupModal = ({ onClose, onSuccess, onSwitchToLogin }) => {
     newOtp[index] = value.slice(-1);
     setOtp(newOtp);
     setError('');
-    if (value && index < 3) otpRefs[index + 1].current?.focus();
+    if (value && index < OTP_LENGTH - 1) otpRefs[index + 1].current?.focus();
   };
 
   const handleOtpKeyDown = (index, e) => {
@@ -32,15 +36,22 @@ const SignupModal = ({ onClose, onSuccess, onSwitchToLogin }) => {
     e.preventDefault();
     const { fullName, email, phone, password } = form;
     if (!fullName || !email || !phone || !password) { setError('Please fill in all fields.'); return; }
-    if (!/^\+\d{10,15}$/.test(phone)) { setError('Phone must be in international format, e.g. +911234567890'); return; }
+    // Backend examples use 10-digit phone numbers (without '+'), but accept 10-15 digits with optional '+'
+    if (!/^\+?\d{10,15}$/.test(phone)) { setError('Phone must be valid (e.g. 6876543210).'); return; }
     setLoading(true);
     try {
-      const data = await authAPI.register({ fullName, email, phone, password });
-      setRegisteredUser(data.user || { fullName, email, phone });
-      if (data.token) localStorage.setItem('token', data.token);
-      if (data.user) localStorage.setItem('user', JSON.stringify(data.user));
+      const resp = await authAPI.register({ fullName, email, phone, password });
+      console.log('Registration response:', resp); // Debug log
+      if (!resp?.success) {
+        setError(resp?.message || 'Registration failed. Try again.');
+        setLoading(false);
+        return;
+      }
+
+      // Step 2: registration OTP verification
+      setSuccess('Registration successful! OTP sent to your phone.');
       setOtpLoading(true);
-      await authAPI.sendOTP(phone);
+      // register endpoint already sends OTP per backend contract
       setStep(2);
       setTimeout(() => otpRefs[0].current?.focus(), 100);
     } catch (err) {
@@ -49,21 +60,46 @@ const SignupModal = ({ onClose, onSuccess, onSwitchToLogin }) => {
   };
 
   const handleResendOTP = async () => {
-    setError(''); setOtpLoading(true);
-    try { await authAPI.sendOTP(form.phone); }
-    catch { setError('Failed to resend OTP.'); }
-    finally { setOtpLoading(false); }
+    // Backend doesn't provide a dedicated "resend registration OTP" endpoint in the contract you shared,
+    // but we can safely call register again to trigger another OTP.
+    setError('');
+    setOtpLoading(true);
+    try {
+      const { fullName, email, phone, password } = form;
+      await authAPI.register({ fullName, email, phone, password });
+      setOtp(Array.from({ length: OTP_LENGTH }, () => ''));
+      setTimeout(() => otpRefs[0].current?.focus(), 50);
+    } catch (e) {
+      setError('Failed to resend OTP.');
+    } finally {
+      setOtpLoading(false);
+    }
   };
 
   const handleVerifyOTP = async (e) => {
     e.preventDefault();
     const otpStr = otp.join('');
-    if (otpStr.length < 4) { setError('Please enter the complete OTP.'); return; }
+    if (otpStr.length !== OTP_LENGTH) { setError(`Please enter the complete ${OTP_LENGTH}-digit OTP.`); return; }
     setLoading(true);
     try {
-      await authAPI.verifyOTP(form.phone, otpStr);
+      const resp = await authAPI.verifyRegistrationOtp({ phone: form.phone, otp: otpStr });
+      if (!resp?.success || !resp?.data?.token) {
+        setError(resp?.message || 'Invalid OTP. Please try again.');
+        return;
+      }
+
+      const authData = resp.data;
+      localStorage.setItem('token', authData.token);
+      localStorage.setItem('user', JSON.stringify({
+        fullName: authData.fullName,
+        email: authData.email,
+        phone: authData.phone,
+        role: authData.role,
+        kycStatus: authData.kycStatus,
+        verified: (authData.kycStatus || '').toUpperCase() === 'APPROVED' || (authData.kycStatus || '').toUpperCase() === 'VERIFIED',
+      }));
       setStep(3);
-      setTimeout(() => onSuccess(registeredUser || { fullName: form.fullName, email: form.email }), 1800);
+      setTimeout(() => onSuccess(authData), 800);
     } catch (err) {
       setError(err?.response?.data?.message || err?.message || 'Invalid OTP. Please try again.');
     } finally { setLoading(false); }
@@ -106,7 +142,7 @@ const SignupModal = ({ onClose, onSuccess, onSwitchToLogin }) => {
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #FF7000, #ff9a3c)' }}>
                   <Zap size={18} className="text-white" fill="white" />
                 </div>
-                <span className="text-lg font-bold text-white">BlaBlaBike</span>
+                <span className="text-lg font-bold text-white">BikePooling</span>
               </div>
               <h2 className="text-2xl font-bold text-white mb-1">Create account</h2>
               <p className="text-gray-400 text-sm mb-5">Join thousands of smart commuters</p>
@@ -117,7 +153,14 @@ const SignupModal = ({ onClose, onSuccess, onSwitchToLogin }) => {
                   {error}
                 </div>
               )}
+              {success && (
+                <div className="mb-4 px-4 py-3 rounded-xl text-sm text-green-300"
+                  style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)' }}>
+                  {success}
+                </div>
+              )}
 
+              
               <form onSubmit={handleRegister} className="space-y-3">
                 {[
                   { label: 'Full Name', name: 'fullName', type: 'text', placeholder: 'John Doe' },

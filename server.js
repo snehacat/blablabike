@@ -281,12 +281,14 @@ app.post('/api/auth/register', (req, res) => {
 // Get statistics
 app.get('/api/stats', (req, res) => {
   const stats = {
-    totalRides: mockRides.length,
+    // Mock display values for the UI until the real backend is integrated.
+    // Home.js expects strings like "6.2K+" / "4.2K+".
+    totalRides: '4.2K+',
     activeRides: mockRides.filter(r => r.status === 'active').length,
-    totalUsers: mockUsers.length,
+    totalUsers: '6.2K+',
     totalBookings: mockBookings.length,
     averageRating: (mockUsers.reduce((acc, user) => acc + user.rating, 0) / mockUsers.length).toFixed(1),
-    fuelSaved: '18L+'
+    fuelSaved: '18L+',
   };
   res.json(stats);
 });

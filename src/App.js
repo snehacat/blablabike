@@ -10,6 +10,8 @@ import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import LoginModal from './LoginModal';
 import SignupModal from './SignupModal';
+import ProfileSection from './components/ProfileSection';
+import Notification from './components/Notification';
 
 const App = () => {
   const [user, setUser] = useState(() => {
@@ -17,17 +19,46 @@ const App = () => {
   });
   const [showLogin, setShowLogin] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const [notification, setNotification] = useState(null);
 
   const handleAuthSuccess = (userData) => {
     setUser(userData);
     setShowLogin(false);
     setShowSignup(false);
+    
+    // Show success notification
+    setNotification({
+      message: `Welcome back, ${userData.fullName}!`,
+      type: 'success'
+    });
+  };
+
+  const handleSignupSuccess = (userData) => {
+    setUser(userData);
+    setShowLogin(false);
+    setShowSignup(false);
+    
+    // Show success notification
+    setNotification({
+      message: `Welcome to BikePooling, ${userData.fullName}!`,
+      type: 'success'
+    });
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setUser(null);
+    // Show confirmation
+    if (window.confirm('Are you sure you want to logout?')) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setUser(null);
+      
+      // Show success notification
+      setNotification({
+        message: 'Logged out successfully!',
+        type: 'success'
+      });
+    }
   };
 
   const handleUserUpdate = (updated) => setUser(updated);
@@ -37,6 +68,7 @@ const App = () => {
     onLoginClick: () => setShowLogin(true),
     onSignupClick: () => setShowSignup(true),
     onLogout: handleLogout,
+    onProfileClick: () => setShowProfile(true),
   };
 
   return (
@@ -51,7 +83,7 @@ const App = () => {
       {showSignup && (
         <SignupModal
           onClose={() => setShowSignup(false)}
-          onSuccess={handleAuthSuccess}
+          onSuccess={handleSignupSuccess}
           onSwitchToLogin={() => { setShowSignup(false); setShowLogin(true); }}
         />
       )}
@@ -59,13 +91,31 @@ const App = () => {
       <Navbar {...navProps} />
 
       <Routes>
-        <Route path="/" element={<Home user={user} onSignupClick={() => setShowSignup(true)} onLoginClick={() => setShowLogin(true)} />} />
+        <Route path="/" element={<Home user={user} onSignupClick={() => setShowSignup(true)} onLoginClick={() => setShowLogin(true)} onProfileUpdate={handleUserUpdate} />} />
         <Route path="/browse" element={<BrowseRides user={user} onLoginClick={() => setShowLogin(true)} />} />
         <Route path="/rides/:id" element={<RideDetail user={user} onLoginClick={() => setShowLogin(true)} />} />
         <Route path="/post-ride" element={<PostRide user={user} onLoginClick={() => setShowLogin(true)} />} />
         <Route path="/dashboard" element={<Dashboard user={user} onLoginClick={() => setShowLogin(true)} />} />
         <Route path="/profile" element={<Profile user={user} onUpdate={handleUserUpdate} />} />
       </Routes>
+
+      {/* Profile Section */}
+      {showProfile && user && (
+        <ProfileSection
+          user={user}
+          onUpdateProfile={handleUserUpdate}
+          onClose={() => setShowProfile(false)}
+        />
+      )}
+
+      {/* Notification */}
+      {notification && (
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification(null)}
+        />
+      )}
 
       <Footer />
     </BrowserRouter>

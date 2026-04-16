@@ -6,21 +6,32 @@ const api = axios.create({
 });
 
 const authAPI = {
+  // Registration (sends OTP; OTP verification completes account creation)
   register: async (userData) => {
     const res = await api.post('/register', userData);
-    return res.data;
+    return res.data; // { success, message, data: null }
   },
-  login: async (credentials) => {
-    const res = await api.post('/login', credentials);
-    return res.data;
+
+  // Registration OTP verification (creates account + returns token/profile)
+  verifyRegistrationOtp: async ({ phone, otp }) => {
+    const res = await api.post('/verify-registration-otp', { phone, otp });
+    return res.data; // { success, message, data: { token, fullName, email, phone, ... } }
   },
-  sendOTP: async (phone) => {
-    const res = await api.post('/send-otp', { phone });
-    return res.data;
+
+  // Login with phone + password
+  loginWithPassword: async ({ phone, password }) => {
+    const res = await api.post('/login/password', { phone, password });
+    return res.data; // { success, message, data: { token, fullName, email, phone, ... } }
   },
-  verifyOTP: async (phone, otp) => {
-    const res = await api.post('/verify-otp', { phone, otp });
-    return res.data;
+
+  // Login with phone + OTP (if you want to add OTP login later)
+  loginSendOtp: async (phone) => {
+    const res = await api.post('/login/send-otp', { phone });
+    return res.data; // { success, message, data: null }
+  },
+  loginVerifyOtp: async ({ phone, otp }) => {
+    const res = await api.post('/login/verify-otp', { phone, otp });
+    return res.data; // { success, message, data: { token, fullName, email, phone, ... } }
   },
 };
 
