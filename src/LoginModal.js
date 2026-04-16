@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { X, Loader, Eye, EyeOff, Zap } from 'lucide-react';
 import authAPI from './authAPI';
 
@@ -10,19 +10,30 @@ const LoginModal = ({ onClose, onSuccess, onSwitchToSignup }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [loginMethod, setLoginMethod] = useState('password'); // 'password' or 'otp'
   const [otpSent, setOtpSent] = useState(false);
-  const [otp, setOtp] = useState('');
-  
-  const handleOtpChange = (e) => {
-    const value = e.target.value;
-    // Ensure OTP is always a string and only allows digits
-    setOtp(value.replace(/\D/g, ''));
-  };
+  // Backend examples return 6-digit OTPs
+  const OTP_LENGTH = 6;
+  const [otp, setOtp] = useState(Array.from({ length: OTP_LENGTH }, () => ''));
+  // Explicit refs to keep hook order stable across renders.
+  const otpRefs = [useRef(), useRef(), useRef(), useRef(), useRef(), useRef()];
   const [otpLoading, setOtpLoading] = useState(false);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
     setError('');
     setSuccess('');
+  };
+
+  const handleOtpChange = (index, value) => {
+    if (!/^\d*$/.test(value)) return;
+    const newOtp = [...otp];
+    newOtp[index] = value.slice(-1);
+    setOtp(newOtp);
+    setError('');
+    if (value && index < OTP_LENGTH - 1) otpRefs[index + 1].current?.focus();
+  };
+
+  const handleOtpKeyDown = (index, e) => {
+    if (e.key === 'Backspace' && !otp[index] && index > 0) otpRefs[index - 1].current?.focus();
   };
 
   const handleSendOtp = async () => {
@@ -46,21 +57,17 @@ const LoginModal = ({ onClose, onSuccess, onSwitchToSignup }) => {
     }
   };
 
-  const handleVerifyOtp = async () => {
-    if (!otp) { setError('Please enter the OTP.'); return; }
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    const otpStr = otp.join('');
+    if (otpStr.length !== OTP_LENGTH) { setError(`Please enter the complete ${OTP_LENGTH}-digit OTP.`); return; }
     
     setLoading(true);
     try {
-      console.log('Verifying OTP for phone:', form.phone, 'OTP:', otp);
+      console.log('Verifying OTP for phone:', form.phone, 'OTP:', otpStr);
       
-      // Backend expects OTP as string, ensure it's always sent as string
-      const requestData = { 
-        phone: form.phone, 
-        otp: otp.toString() // Always send OTP as string
-      };
-      console.log('Request data being sent (OTP as string):', JSON.stringify(requestData));
-      
-      const resp = await authAPI.loginVerifyOtp(requestData);
+      // Use same method as SignupModal - send as joined string
+      const resp = await authAPI.loginVerifyOtp({ phone: form.phone, otp: otpStr });
       console.log('OTP verification response:', resp);
       
       if (resp?.success && resp?.data?.token) {
@@ -142,7 +149,8 @@ const LoginModal = ({ onClose, onSuccess, onSwitchToSignup }) => {
       if (!otpSent) {
         handleSendOtp();
       } else {
-        handleVerifyOtp();
+        // OTP verification is handled by form submission
+        return;
       }
     }
   };
@@ -204,55 +212,81 @@ const LoginModal = ({ onClose, onSuccess, onSwitchToSignup }) => {
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wide">Phone</label>
-              <input type="tel" name="phone" value={form.phone} onChange={handleChange}
-                placeholder="6876543210" className="input-dark w-full px-4 py-3 rounded-xl text-sm" required />
-            </div>
-            
-            {loginMethod === 'password' && (
-              <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wide">Password</label>
-                <div className="relative">
-                  <input type={showPassword ? 'text' : 'password'} name="password" value={form.password}
-                    onChange={handleChange} placeholder="Enter password"
-                    className="input-dark w-full px-4 py-3 rounded-xl text-sm pr-11" required />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300">
-                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
+          {loginMethod === 'otp' && otpSent && (
+              <form onSubmit={handleVerifyOtp} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wide">Phone</label>
+                  <input type="tel" name="phone" value={form.phone} onChange={handleChange}
+                    placeholder="6876543210" className="input-dark w-full px-4 py-3 rounded-xl text-sm" required disabled />
                 </div>
-              </div>
+                
+                <div>
+                  <label className="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wide">Enter OTP</label>
+                  <div className="flex gap-3 justify-center mb-6">
+                    {otp.map((digit, i) => (
+                      <input
+                        key={i}
+                        ref={otpRefs[i]}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={1}
+                        value={digit}
+                        onChange={(e) => handleOtpChange(i, e.target.value)}
+                        onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                        className="otp-input"
+                      />
+                    ))}
+                  </div>
+                </div>
+                
+                <button type="submit" disabled={loading}
+                  className="btn-primary w-full py-3 text-sm mt-2 disabled:opacity-50 flex items-center justify-center gap-2">
+                  {loading && <Loader size={15} className="animate-spin" />}
+                  <span>{loading ? 'Verifying...' : 'Verify OTP'}</span>
+                </button>
+                <p className="text-center text-sm text-gray-500 mt-4">
+                  Didn't receive it?{' '}
+                  <button type="button" onClick={handleSendOtp} disabled={otpLoading}
+                    className="text-primary-orange font-semibold hover:underline disabled:opacity-50">
+                    {otpLoading ? 'Sending...' : 'Resend OTP'}
+                  </button>
+                </p>
+              </form>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wide">Phone</label>
+                  <input type="tel" name="phone" value={form.phone} onChange={handleChange}
+                    placeholder="6876543210" className="input-dark w-full px-4 py-3 rounded-xl text-sm" required />
+                </div>
+                
+                {loginMethod === 'password' && (
+                  <div>
+                    <label className="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wide">Password</label>
+                    <div className="relative">
+                      <input type={showPassword ? 'text' : 'password'} name="password" value={form.password}
+                        onChange={handleChange} placeholder="Enter password"
+                        className="input-dark w-full px-4 py-3 rounded-xl text-sm pr-11" required />
+                      <button type="button" onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300">
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </div>
+                )}
+                
+                <button type="submit" disabled={loading || otpLoading}
+                  className="btn-primary w-full py-3 text-sm mt-2 disabled:opacity-50 flex items-center justify-center gap-2">
+                  {(loading || otpLoading) && <Loader size={15} className="animate-spin" />}
+                  <span>
+                    {loading ? 'Signing in...' : 
+                     otpLoading ? 'Sending OTP...' :
+                     loginMethod === 'otp' && !otpSent ? 'Send OTP' :
+                     'Sign In'}
+                  </span>
+                </button>
+              </form>
             )}
-            
-            {loginMethod === 'otp' && otpSent && (
-              <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wide">Enter OTP</label>
-                <input
-                  type="text"
-                  value={otp}
-                  onChange={handleOtpChange}
-                  placeholder="Enter 6-digit OTP"
-                  className="input-dark w-full px-4 py-3 rounded-xl text-sm"
-                  maxLength={6}
-                  required
-                />
-              </div>
-            )}
-            
-            <button type="submit" disabled={loading || otpLoading}
-              className="btn-primary w-full py-3 text-sm mt-2 disabled:opacity-50 flex items-center justify-center gap-2">
-              {(loading || otpLoading) && <Loader size={15} className="animate-spin" />}
-              <span>
-                {loading ? 'Signing in...' : 
-                 otpLoading ? 'Sending OTP...' :
-                 loginMethod === 'otp' && !otpSent ? 'Send OTP' :
-                 loginMethod === 'otp' && otpSent ? 'Verify OTP' :
-                 'Sign In'}
-              </span>
-            </button>
-          </form>
           <p className="text-center text-sm text-gray-500 mt-5">
             Don't have an account?{' '}
             <button onClick={onSwitchToSignup} className="text-primary-orange font-semibold hover:underline">

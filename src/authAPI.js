@@ -30,11 +30,63 @@ const authAPI = {
     return res.data; // { success, message, data: null }
   },
   loginVerifyOtp: async ({ phone, otp }) => {
-    const requestData = { phone, otp };
-    console.log('authAPI - Sending OTP verification request:', requestData);
-    const res = await api.post('/login/verify-otp', requestData);
-    console.log('authAPI - OTP verification response:', res.data);
-    return res.data; // { success, message, data: { token, fullName, email, phone, ... } }
+    // Try different request formats - the error suggests backend expects raw string
+    const formats = [
+      {
+        name: 'Raw OTP string as request body',
+        data: String(otp),
+        headers: { 'Content-Type': 'text/plain' }
+      },
+      {
+        name: 'JSON with phone as string, OTP as raw string',
+        data: JSON.stringify({ phone: String(phone), otp: String(otp) }),
+        headers: { 'Content-Type': 'application/json' }
+      },
+      {
+        name: 'JSON with only OTP',
+        data: JSON.stringify({ otp: String(otp) }),
+        headers: { 'Content-Type': 'application/json' }
+      },
+      {
+        name: 'URL encoded with phone and OTP',
+        data: `phone=${encodeURIComponent(phone)}&otp=${encodeURIComponent(otp)}`,
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      },
+      {
+        name: 'JSON array with phone and OTP',
+        data: JSON.stringify([String(phone), String(otp)]),
+        headers: { 'Content-Type': 'application/json' }
+      }
+    ];
+
+    for (const format of formats) {
+      try {
+        console.log(`authAPI - Trying format: ${format.name}`);
+        console.log('authAPI - Data:', format.data);
+        console.log('authAPI - Headers:', format.headers);
+        
+        // Use existing axios import
+        // const axios = require('axios');
+        const res = await axios.post(`${api.defaults.baseURL}/login/verify-otp`, format.data, {
+          headers: {
+            ...format.headers,
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        console.log(`authAPI - Success with ${format.name}:`, res.data);
+        return res.data;
+      } catch (error) {
+        console.error(`authAPI - Failed with ${format.name}:`, error.response?.data || error.message);
+        console.error(`authAPI - Error status:`, error.response?.status);
+        console.error(`authAPI - Error headers:`, error.response?.headers);
+        if (format.name === formats[formats.length - 1].name) {
+          // Last format failed, throw the error
+          throw error;
+        }
+        // Try next format
+        continue;
+      }
+    }
   },
 };
 
