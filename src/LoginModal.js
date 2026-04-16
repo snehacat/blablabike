@@ -11,6 +11,12 @@ const LoginModal = ({ onClose, onSuccess, onSwitchToSignup }) => {
   const [loginMethod, setLoginMethod] = useState('password'); // 'password' or 'otp'
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState('');
+  
+  const handleOtpChange = (e) => {
+    const value = e.target.value;
+    // Ensure OTP is always a string and only allows digits
+    setOtp(value.replace(/\D/g, ''));
+  };
   const [otpLoading, setOtpLoading] = useState(false);
 
   const handleChange = (e) => {
@@ -46,37 +52,16 @@ const LoginModal = ({ onClose, onSuccess, onSwitchToSignup }) => {
     setLoading(true);
     try {
       console.log('Verifying OTP for phone:', form.phone, 'OTP:', otp);
-      const requestData = { phone: form.phone, otp: otp };
-      console.log('Request data being sent:', JSON.stringify(requestData));
       
-      let resp;
-      try {
-        resp = await authAPI.loginVerifyOtp(requestData);
-        console.log('OTP verification response:', resp);
-      } catch (firstError) {
-        console.log('First attempt failed, trying different format:', firstError);
-        
-        // Try with OTP as string explicitly
-        try {
-          const stringRequest = { phone: form.phone, otp: otp.toString() };
-          console.log('Trying with string OTP:', JSON.stringify(stringRequest));
-          resp = await authAPI.loginVerifyOtp(stringRequest);
-          console.log('String OTP response:', resp);
-        } catch (secondError) {
-          console.log('Second attempt failed, trying as number:', secondError);
-          
-          // Try with OTP as number
-          try {
-            const numberRequest = { phone: form.phone, otp: parseInt(otp) };
-            console.log('Trying with number OTP:', JSON.stringify(numberRequest));
-            resp = await authAPI.loginVerifyOtp(numberRequest);
-            console.log('Number OTP response:', resp);
-          } catch (thirdError) {
-            console.log('All formats failed:', thirdError);
-            throw thirdError;
-          }
-        }
-      }
+      // Backend expects OTP as string, ensure it's always sent as string
+      const requestData = { 
+        phone: form.phone, 
+        otp: otp.toString() // Always send OTP as string
+      };
+      console.log('Request data being sent (OTP as string):', JSON.stringify(requestData));
+      
+      const resp = await authAPI.loginVerifyOtp(requestData);
+      console.log('OTP verification response:', resp);
       
       if (resp?.success && resp?.data?.token) {
         const authData = resp.data;
@@ -247,7 +232,7 @@ const LoginModal = ({ onClose, onSuccess, onSwitchToSignup }) => {
                 <input
                   type="text"
                   value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
+                  onChange={handleOtpChange}
                   placeholder="Enter 6-digit OTP"
                   className="input-dark w-full px-4 py-3 rounded-xl text-sm"
                   maxLength={6}
