@@ -87,11 +87,13 @@ const ProfileSection = ({ user, onUpdateProfile, onClose }) => {
             
             setSuccessMessage('Profile picture updated successfully!');
             
-            // Update user data in parent component
-            onUpdateProfile({
+            // Update user data in parent component and localStorage
+            const updatedUser = {
               ...user,
               avatar: result.profilePictureUrl || previewImage
-            });
+            };
+            onUpdateProfile(updatedUser);
+            localStorage.setItem('user', JSON.stringify(updatedUser));
 
             // Reset after 2 seconds
             setTimeout(() => {
@@ -105,10 +107,12 @@ const ProfileSection = ({ user, onUpdateProfile, onClose }) => {
             
             // Backend endpoint doesn't exist - use fallback
             console.warn('Backend endpoint not available, using fallback');
-            onUpdateProfile({
+            const updatedUser = {
               ...user,
               avatar: previewImage
-            });
+            };
+            onUpdateProfile(updatedUser);
+            localStorage.setItem('user', JSON.stringify(updatedUser));
             setSuccessMessage('Profile picture updated! (Backend integration pending)');
             
             setTimeout(() => {
@@ -122,10 +126,12 @@ const ProfileSection = ({ user, onUpdateProfile, onClose }) => {
           console.error('Error details:', error.message, error.stack);
           
           // Fallback: still update with preview image
-          onUpdateProfile({
+          const updatedUser = {
             ...user,
             avatar: previewImage
-          });
+          };
+          onUpdateProfile(updatedUser);
+          localStorage.setItem('user', JSON.stringify(updatedUser));
           setSuccessMessage('Profile picture updated! (Offline mode)');
           
           setTimeout(() => {
@@ -138,11 +144,13 @@ const ProfileSection = ({ user, onUpdateProfile, onClose }) => {
         // Demo mode for development
         await new Promise(resolve => setTimeout(resolve, 1500));
         
-        // Update user data in parent component with the preview image
-        onUpdateProfile({
+        // Update user data in parent component and localStorage with the preview image
+        const updatedUser = {
           ...user,
           avatar: previewImage
-        });
+        };
+        onUpdateProfile(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
 
         setSuccessMessage('Profile picture updated successfully! (Demo mode)');
 

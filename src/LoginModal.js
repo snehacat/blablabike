@@ -8,6 +8,10 @@ const LoginModal = ({ onClose, onSuccess, onSwitchToSignup }) => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [loginMethod, setLoginMethod] = useState('password'); // 'password' or 'otp'
+  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [otpLoading, setOtpLoading] = useState(false);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -15,15 +19,33 @@ const LoginModal = ({ onClose, onSuccess, onSwitchToSignup }) => {
     setSuccess('');
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!form.phone || !form.password) { setError('Please fill in all fields.'); return; }
-    // Backend examples use 10-digit phone numbers, but allow 10-15 digits (+ optional)
+  const handleSendOtp = async () => {
+    if (!form.phone) { setError('Please enter your phone number.'); return; }
     const phoneOk = /^\+?\d{10,15}$/.test(form.phone);
     if (!phoneOk) { setError('Phone must be valid (e.g. 6876543210).'); return; }
+    
+    setOtpLoading(true);
+    try {
+      const resp = await authAPI.loginSendOtp({ phone: form.phone });
+      if (resp?.success) {
+        setOtpSent(true);
+        setSuccess('OTP sent to your phone!');
+      } else {
+        setError(resp?.message || 'Failed to send OTP.');
+      }
+    } catch (err) {
+      setError(err?.response?.data?.message || err?.message || 'Failed to send OTP.');
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!form.otp) { setError('Please enter the OTP.'); return; }
+    
     setLoading(true);
     try {
-      const resp = await authAPI.loginWithPassword({ phone: form.phone, password: form.password });
+      const resp = await authAPI.loginVerifyOtp({ phone: form.phone, otp: form.otp });
       if (resp?.success && resp?.data?.token) {
         const authData = resp.data;
         localStorage.setItem('token', authData.token);
@@ -48,11 +70,63 @@ const LoginModal = ({ onClose, onSuccess, onSwitchToSignup }) => {
         }, 1500);
         return;
       }
-      setError(resp?.message || 'Login failed. Please try again.');
+      setError(resp?.message || 'Invalid OTP. Please try again.');
     } catch (err) {
-      setError(err?.response?.data?.message || err?.message || 'Login failed. Check your credentials.');
+      setError(err?.response?.data?.message || err?.message || 'Invalid OTP. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (loginMethod === 'password') {
+      if (!form.phone || !form.password) { setError('Please fill in all fields.'); return; }
+      const phoneOk = /^\+?\d{10,15}$/.test(form.phone);
+      if (!phoneOk) { setError('Phone must be valid (e.g. 6876543210).'); return; }
+      
+      setLoading(true);
+      try {
+        const resp = await authAPI.loginWithPassword({ phone: form.phone, password: form.password });
+        console.log('Login response:', resp); // Debug log
+        if (resp?.success && resp?.data?.token) {
+          const authData = resp.data;
+          localStorage.setItem('token', authData.token);
+          localStorage.setItem('user', JSON.stringify({
+            fullName: authData.fullName,
+            email: authData.email,
+            phone: authData.phone,
+            role: authData.role,
+            kycStatus: authData.kycStatus,
+            verified: (authData.kycStatus || '').toUpperCase() === 'APPROVED' || (authData.kycStatus || '').toUpperCase() === 'VERIFIED',
+          }));
+          setSuccess('Login successful! Redirecting...');
+          setTimeout(() => {
+            onSuccess({
+              fullName: authData.fullName,
+              email: authData.email,
+              phone: authData.phone,
+              role: authData.role,
+              kycStatus: authData.kycStatus,
+              verified: (authData.kycStatus || '').toUpperCase() === 'APPROVED' || (authData.kycStatus || '').toUpperCase() === 'VERIFIED',
+            });
+          }, 1500);
+          return;
+        }
+        setError(resp?.message || 'Login failed. Please try again.');
+      } catch (err) {
+        setError(err?.response?.data?.message || err?.message || 'Login failed. Check your credentials.');
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      // OTP login
+      if (!otpSent) {
+        handleSendOtp();
+      } else {
+        handleVerifyOtp();
+      }
     }
   };
 
@@ -87,28 +161,79 @@ const LoginModal = ({ onClose, onSuccess, onSwitchToSignup }) => {
               {success}
             </div>
           )}
+          {/* Login Method Selection */}
+          <div className="flex gap-2 mb-4">
+            <button
+              type="button"
+              onClick={() => setLoginMethod('password')}
+              className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
+                loginMethod === 'password'
+                  ? 'bg-orange-DEFAULT text-white'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
+            >
+              Password
+            </button>
+            <button
+              type="button"
+              onClick={() => setLoginMethod('otp')}
+              className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
+                loginMethod === 'otp'
+                  ? 'bg-orange-DEFAULT text-white'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
+            >
+              OTP
+            </button>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wide">Phone</label>
               <input type="tel" name="phone" value={form.phone} onChange={handleChange}
                 placeholder="6876543210" className="input-dark w-full px-4 py-3 rounded-xl text-sm" required />
             </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wide">Password</label>
-              <div className="relative">
-                <input type={showPassword ? 'text' : 'password'} name="password" value={form.password}
-                  onChange={handleChange} placeholder="••••••••"
-                  className="input-dark w-full px-4 py-3 rounded-xl text-sm pr-11" required />
-                <button type="button" onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300">
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
+            
+            {loginMethod === 'password' && (
+              <div>
+                <label className="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wide">Password</label>
+                <div className="relative">
+                  <input type={showPassword ? 'text' : 'password'} name="password" value={form.password}
+                    onChange={handleChange} placeholder="Enter password"
+                    className="input-dark w-full px-4 py-3 rounded-xl text-sm pr-11" required />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300">
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
               </div>
-            </div>
-            <button type="submit" disabled={loading}
+            )}
+            
+            {loginMethod === 'otp' && otpSent && (
+              <div>
+                <label className="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wide">Enter OTP</label>
+                <input
+                  type="text"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  placeholder="Enter 6-digit OTP"
+                  className="input-dark w-full px-4 py-3 rounded-xl text-sm"
+                  maxLength={6}
+                  required
+                />
+              </div>
+            )}
+            
+            <button type="submit" disabled={loading || otpLoading}
               className="btn-primary w-full py-3 text-sm mt-2 disabled:opacity-50 flex items-center justify-center gap-2">
-              {loading && <Loader size={15} className="animate-spin" />}
-              <span>{loading ? 'Signing in...' : 'Sign In'}</span>
+              {(loading || otpLoading) && <Loader size={15} className="animate-spin" />}
+              <span>
+                {loading ? 'Signing in...' : 
+                 otpLoading ? 'Sending OTP...' :
+                 loginMethod === 'otp' && !otpSent ? 'Send OTP' :
+                 loginMethod === 'otp' && otpSent ? 'Verify OTP' :
+                 'Sign In'}
+              </span>
             </button>
           </form>
           <p className="text-center text-sm text-gray-500 mt-5">
