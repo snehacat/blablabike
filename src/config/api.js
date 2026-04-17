@@ -11,7 +11,7 @@ const getApiConfig = () => {
   }
   
   if (isProduction) {
-    // Use the same backend URL for production
+    // For production, use the same backend URL
     return {
       baseURL: 'https://bike-cytc.onrender.com/api',
       timeout: 10000,

@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Mail, Phone, Calendar, Shield, Car, Star, Edit2, Camera, Lock, Check, X, ArrowRight } from 'lucide-react';
-import authAPI from '../authAPI';
+import { User, Mail, Phone, Calendar, Shield, Car, Star, Edit2, Camera, Lock, X, ArrowRight } from 'lucide-react';
 import getApiConfig from '../config/api';
 
 const MyProfile = ({ user, onUpdateUser }) => {

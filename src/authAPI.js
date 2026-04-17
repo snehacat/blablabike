@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { Loader } from 'lucide-react';
 import getApiConfig from './config/api';
 
 const apiConfig = getApiConfig();
