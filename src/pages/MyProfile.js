@@ -69,17 +69,22 @@ const MyProfile = ({ user, onUpdateUser }) => {
       // Fallback to localStorage and user data
       console.log('Fetching profile data from localStorage...');
       
-      // Try to get profile from localStorage first
+      // Try to get profile from localStorage - check both keys
+      const savedUser = localStorage.getItem('user');
       const savedProfile = localStorage.getItem('userProfile');
+      const userFromStorage = savedUser ? JSON.parse(savedUser) : null;
       const profileFromStorage = savedProfile ? JSON.parse(savedProfile) : null;
       
-      // Create profile data from user info and saved profile
+      console.log('Found user in localStorage:', userFromStorage);
+      console.log('Found profile in localStorage:', profileFromStorage);
+      
+      // Create profile data from user info and saved profile data
       const profileData = {
-        fullName: user?.fullName || profileFromStorage?.fullName || 'User',
-        email: user?.email || profileFromStorage?.email || 'user@example.com',
-        phone: user?.phone || profileFromStorage?.phone || '1234567890',
+        fullName: user?.fullName || userFromStorage?.fullName || profileFromStorage?.fullName || 'User',
+        email: user?.email || userFromStorage?.email || profileFromStorage?.email || 'user@example.com',
+        phone: user?.phone || userFromStorage?.phone || profileFromStorage?.phone || '1234567890',
         memberSince: 'April 2026',
-        kycStatus: user?.kycStatus || 'PENDING',
+        kycStatus: user?.kycStatus || userFromStorage?.kycStatus || profileFromStorage?.kycStatus || 'PENDING',
         phoneVerified: true,
         kycVerified: false,
         drivingLicenseVerified: false,
@@ -90,6 +95,7 @@ const MyProfile = ({ user, onUpdateUser }) => {
         averageRating: 0.0,
         totalReviews: 0,
         recentReviews: [],
+        ...userFromStorage, // Override with user data from localStorage
         ...profileFromStorage // Override with saved profile data
       };
       
@@ -129,8 +135,12 @@ const MyProfile = ({ user, onUpdateUser }) => {
       // For now, save to localStorage and update state immediately
       console.log('Updating profile with:', editForm);
       
-      // Save to localStorage
+      // Save to localStorage - update both keys for consistency
       localStorage.setItem('userProfile', JSON.stringify(editForm));
+      
+      // Also update the user key to ensure login system picks up the name
+      const updatedUser = { ...user, ...editForm };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
       
       // Update profileData state
       setProfileData(prev => ({
@@ -140,10 +150,7 @@ const MyProfile = ({ user, onUpdateUser }) => {
       
       // Update user in parent component
       if (onUpdateUser) {
-        onUpdateUser({
-          ...user,
-          ...editForm
-        });
+        onUpdateUser(updatedUser);
       }
       
       setSuccess('Profile updated successfully! (Saved locally)');
