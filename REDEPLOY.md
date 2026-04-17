@@ -10,3 +10,4 @@ This file triggers Vercel to redeploy with latest changes.
 - Pre-filled form data for KYC updates
 - localStorage-based KYC status tracking
 - Removed Driving License from profile for cleaner UI
+- Fixed Next button visibility in update mode (deployed 2026-04-17 18:05)
