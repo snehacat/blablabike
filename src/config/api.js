@@ -11,22 +11,9 @@ const getApiConfig = () => {
   }
   
   if (isProduction) {
-    // For production, you have several options:
-    // Option 1: Use your deployed backend URL
+    // Use the same backend URL for production
     return {
-      baseURL: 'https://your-backend-domain.com/api',
-      timeout: 10000,
-    };
-    
-    // Option 2: Use Vercel serverless functions
-    // return {
-    //   baseURL: '/api',
-    //   timeout: 10000,
-    // };
-    
-    // Option 3: Mock API for demo purposes (temporary)
-    return {
-      baseURL: 'https://mockapi.example.com/api',
+      baseURL: 'https://bike-cytc.onrender.com/api',
       timeout: 10000,
     };
   }

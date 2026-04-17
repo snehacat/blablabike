@@ -6,7 +6,6 @@ import Home from './pages/Home';
 import BrowseRides from './pages/BrowseRides';
 import RideDetail from './pages/RideDetail';
 import PostRide from './pages/PostRide';
-import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import MyProfile from './pages/MyProfile';
 import KYCPage from './pages/KYCPage';
@@ -16,16 +15,26 @@ import ProfileSection from './components/ProfileSection';
 import Notification from './components/Notification';
 
 const App = () => {
-  const [user, setUser] = useState(() => {
-    try {
-      const userData = JSON.parse(localStorage.getItem('user'));
-      console.log('App.js - User data from localStorage:', userData);
-      return userData;
-    } catch (error) {
-      console.log('App.js - Error parsing user data:', error);
-      return null;
+  // Clear any old demo user data on app start
+  React.useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        if (userData.fullName === 'Demo User') {
+          console.log('Clearing old demo user data...');
+          localStorage.removeItem('user');
+          localStorage.removeItem('token');
+        }
+      } catch (error) {
+        console.log('Error parsing stored user data, clearing...');
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+      }
     }
-  });
+  }, []);
+
+  const [user, setUser] = useState(null);
   const [showLogin, setShowLogin] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
@@ -115,8 +124,7 @@ const App = () => {
         <Route path="/browse" element={<BrowseRides user={user} onLoginClick={() => setShowLogin(true)} />} />
         <Route path="/rides/:id" element={<RideDetail user={user} onLoginClick={() => setShowLogin(true)} />} />
         <Route path="/post-ride" element={<PostRide user={user} onLoginClick={() => setShowLogin(true)} />} />
-        <Route path="/dashboard" element={<Dashboard user={user} onLoginClick={() => setShowLogin(true)} />} />
-        <Route path="/profile" element={<Profile user={user} onUpdate={handleUserUpdate} />} />
+                <Route path="/profile" element={<Profile user={user} onUpdate={handleUserUpdate} />} />
         <Route path="/my-profile" element={<MyProfile user={user} onUpdateUser={handleUserUpdate} />} />
         <Route path="/kyc" element={<KYCPage user={user} />} />
       </Routes>

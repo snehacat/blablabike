@@ -22,7 +22,6 @@ const Navbar = ({ user, onLoginClick, onSignupClick, onLogout, onProfileClick })
   const privateNavLinks = [
     { label: 'My Profile', to: '/my-profile' },
     { label: 'KYC', to: '/kyc' },
-    { label: 'Admin', to: '/admin' },
   ];
 
   const isActive = (path) => location.pathname === path;
@@ -148,7 +147,6 @@ const Navbar = ({ user, onLoginClick, onSignupClick, onLogout, onProfileClick })
           <div className="pt-2 border-t border-white border-opacity-10 space-y-2">
             {user ? (
               <>
-                <Link to="/dashboard" onClick={() => setIsMenuOpen(false)} className="block px-4 py-2.5 text-sm text-gray-300">Dashboard</Link>
                 <button onClick={() => { onLogout(); setIsMenuOpen(false); }} className="w-full btn-outline px-4 py-2.5 text-sm text-left">Logout</button>
               </>
             ) : (

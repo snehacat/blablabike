@@ -29,6 +29,7 @@ const MyProfile = ({ user, onUpdateUser }) => {
       return;
     }
     fetchProfile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, navigate]);
 
   const fetchProfile = async () => {

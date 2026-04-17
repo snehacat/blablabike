@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, User, FileText, CheckCircle, AlertCircle, Upload, ArrowLeft } from 'lucide-react';
+import { Shield, User, FileText, AlertCircle, Upload, ArrowLeft } from 'lucide-react';
 
 const KYCPage = ({ user }) => {
   const navigate = useNavigate();
