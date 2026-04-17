@@ -21,6 +21,16 @@ const MyProfile = ({ user, onUpdateUser }) => {
   const [previewImage, setPreviewImage] = useState(null);
   const fileInputRef = useRef(null);
 
+  // Check KYC status and submission time from localStorage
+  const [kycStatus, setKycStatus] = useState(() => {
+    return localStorage.getItem('kycStatus') || 'PENDING';
+  });
+  
+  const [kycSubmittedTime, setKycSubmittedTime] = useState(() => {
+    const stored = localStorage.getItem('kycSubmittedTime');
+    return stored ? new Date(stored) : null;
+  });
+
   // Check if user is logged in
   useEffect(() => {
     if (!user) {
@@ -264,6 +274,8 @@ const MyProfile = ({ user, onUpdateUser }) => {
   const getStatusColor = (status) => {
     switch (status?.toUpperCase()) {
       case 'VERIFIED': return 'text-green-600 bg-green-100';
+      case 'SUBMITTED': return 'text-blue-600 bg-blue-100';
+      case 'SUBMITTED': return 'text-blue-600 bg-blue-100';
       case 'PENDING': return 'text-yellow-600 bg-yellow-100';
       case 'REJECTED': return 'text-red-600 bg-red-100';
       default: return 'text-gray-600 bg-gray-100';
@@ -439,32 +451,56 @@ const MyProfile = ({ user, onUpdateUser }) => {
                 <Shield size={20} className="text-gray-400" />
                 <span>KYC Verification</span>
               </div>
-              {profileData.kycVerified ? (
+              
+              {/* Show KYC status and buttons based on localStorage status */}
+              {kycStatus === 'PENDING' ? (
+                <>
+                  <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor('PENDING')}`}>
+                    KYC Pending
+                  </span>
+                  <button
+                    onClick={() => navigate('/kyc')}
+                    className="flex items-center gap-2 px-3 py-1 bg-orange-500 text-white rounded-full text-sm hover:bg-orange-600 transition-colors"
+                  >
+                    Complete KYC
+                    <ArrowRight size={14} />
+                  </button>
+                </>
+              ) : kycStatus === 'SUBMITTED' ? (
+                (() => {
+                  const hoursSinceSubmission = kycSubmittedTime ? 
+                    (Date.now() - kycSubmittedTime.getTime()) / (1000 * 60 * 60) : 0;
+                  
+                  if (hoursSinceSubmission < 12) {
+                    return (
+                      <>
+                        <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor('SUBMITTED')}`}>
+                          KYC Submitted
+                        </span>
+                        <button
+                          onClick={() => navigate('/kyc')}
+                          className="flex items-center gap-2 px-3 py-1 bg-green-500 text-white rounded-full text-sm hover:bg-green-600 transition-colors"
+                        >
+                          Update KYC
+                          <Edit2 size={14} />
+                        </button>
+                      </>
+                    );
+                  } else {
+                    return (
+                      <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor('SUBMITTED')}`}>
+                        KYC Submitted
+                      </span>
+                    );
+                  }
+                })()
+              ) : kycStatus === 'VERIFIED' ? (
                 <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor('VERIFIED')}`}>
-                  Verified
-                </span>
-              ) : (
-                <button
-                  onClick={() => navigate('/kyc')}
-                  className="flex items-center gap-2 px-3 py-1 bg-orange-500 text-white rounded-full text-sm hover:bg-orange-600 transition-colors"
-                >
-                  Complete KYC
-                  <ArrowRight size={14} />
-                </button>
-              )}
-            </div>
-            <div className="flex items-center justify-between p-4 bg-gray-700 rounded-lg">
-              <div className="flex items-center gap-3">
-                <Car size={20} className="text-gray-400" />
-                <span>Driving License</span>
-              </div>
-              {profileData.drivingLicenseVerified ? (
-                <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor('VERIFIED')}`}>
-                  Verified
+                  KYC Verified
                 </span>
               ) : (
                 <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor('PENDING')}`}>
-                  Required for ride posting
+                  KYC Pending
                 </span>
               )}
             </div>

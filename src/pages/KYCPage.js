@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, User, FileText, AlertCircle, Upload, ArrowLeft } from 'lucide-react';
+import { Shield, User, FileText, AlertCircle, Upload, ArrowLeft, Edit2 } from 'lucide-react';
 
 const KYCPage = ({ user }) => {
   const navigate = useNavigate();
@@ -24,12 +24,31 @@ const KYCPage = ({ user }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [kycSubmitted, setKycSubmitted] = useState(false);
 
-  // Check if user is logged in
+  // Check if KYC was submitted and track time for Update Details button
+  const [kycSubmittedTime, setKycSubmittedTime] = useState(() => {
+    const stored = localStorage.getItem('kycSubmittedTime');
+    return stored ? new Date(stored) : null;
+  });
+
+  // Check if user is logged in and load stored KYC data
   React.useEffect(() => {
     if (!user) {
       navigate('/');
       return;
+    }
+    
+    // Load previously submitted KYC data if exists
+    const storedKycData = localStorage.getItem('kycSubmissionData');
+    if (storedKycData) {
+      try {
+        const kycData = JSON.parse(storedKycData);
+        setFormData(kycData);
+        setKycSubmitted(true);
+      } catch (error) {
+        console.log('Error loading stored KYC data:', error);
+      }
     }
   }, [user, navigate]);
 
@@ -51,9 +70,32 @@ const KYCPage = ({ user }) => {
     setSuccess('');
 
     try {
+      // Check if all required documents are uploaded (only runs when submit button is clicked)
+      if (!formData.idProof || !formData.addressProof || !formData.drivingLicense) {
+        setError('Please upload all required documents (ID Proof, Address Proof, and Driving License) before submitting.');
+        setLoading(false);
+        return;
+      }
+
+      // Validate required personal information fields (from both tabs)
+      const personalInfoFields = [
+        'fullName', 'email', 'phone', 'dateOfBirth', 'address', 
+        'city', 'state', 'pincode', 'panNumber'
+      ];
+      
+      const documentFields = ['aadhaarNumber', 'drivingLicenseNumber'];
+      
+      const missingPersonalFields = personalInfoFields.filter(field => !formData[field]);
+      const missingDocumentFields = documentFields.filter(field => !formData[field]);
+      
+      if (missingPersonalFields.length > 0 || missingDocumentFields.length > 0) {
+        setError('Please fill in all required fields in both Personal Information and Document Upload tabs before submitting.');
+        setLoading(false);
+        return;
+      }
+
       // TODO: Replace with actual KYC submission API
       // For now, simulate KYC submission
-      console.log('KYC Data:', formData);
       
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -61,7 +103,14 @@ const KYCPage = ({ user }) => {
       setSuccess('KYC documents submitted successfully! Our team will verify your documents within 24-48 hours.');
       
       // Update user KYC status (temporary localStorage solution)
-      localStorage.setItem('kycStatus', 'PENDING_VERIFICATION');
+      localStorage.setItem('kycStatus', 'SUBMITTED');
+      localStorage.setItem('kycSubmittedTime', new Date().toISOString());
+      
+      // Save KYC data for future editing
+      localStorage.setItem('kycSubmissionData', JSON.stringify(formData));
+      
+      // Mark KYC as submitted to hide submit button
+      setKycSubmitted(true);
       
     } catch (err) {
       console.error('KYC submission error:', err);
@@ -237,7 +286,6 @@ const KYCPage = ({ user }) => {
               accept="image/*,.pdf"
               className="hidden"
               id="idProof"
-              required
             />
             <label htmlFor="idProof" className="cursor-pointer">
               <span className="text-gray-300">Click to upload ID proof</span>
@@ -259,7 +307,6 @@ const KYCPage = ({ user }) => {
               accept="image/*,.pdf"
               className="hidden"
               id="drivingLicense"
-              required
             />
             <label htmlFor="drivingLicense" className="cursor-pointer">
               <span className="text-gray-300">Click to upload driving license</span>
@@ -321,13 +368,25 @@ const KYCPage = ({ user }) => {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <button
-            onClick={() => navigate('/my-profile')}
-            className="flex items-center gap-2 text-gray-400 hover:text-white mb-4 transition-colors"
-          >
-            <ArrowLeft size={20} />
-            Back to Profile
-          </button>
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h2 className="text-2xl font-bold text-white">
+                {kycSubmitted ? 'Update KYC Details' : 'KYC Verification'}
+              </h2>
+              {kycSubmitted && (
+                <p className="text-gray-400 text-sm mt-1">
+                  Review and update your submitted KYC information
+                </p>
+              )}
+            </div>
+            <button
+              onClick={() => navigate('/my-profile')}
+              className="flex items-center gap-2 px-4 py-2 text-gray-400 hover:text-white transition-colors"
+            >
+              <ArrowLeft size={20} />
+              Back to Profile
+            </button>
+          </div>
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-full flex items-center justify-center">
               <Shield size={24} className="text-white" />
@@ -382,28 +441,119 @@ const KYCPage = ({ user }) => {
           {/* Tab Content */}
           <form onSubmit={handleSubmit}>
             {activeTab === 'personal' && renderPersonalInfo()}
-            {activeTab === 'documents' && renderDocumentUpload()}
+            {activeTab === 'documents' && (
+              <>
+                {renderDocumentUpload()}
+                
+                {/* Document Upload Status */}
+                <div className="mt-6 p-4 bg-gray-700/50 rounded-lg">
+                  <h3 className="text-sm font-medium text-gray-300 mb-3">Document Upload Status:</h3>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-400">ID Proof (Aadhaar Card):</span>
+                      <span className={formData.idProof ? "text-green-400" : "text-red-400"}>
+                        {formData.idProof ? "✓ Uploaded" : "✗ Required"}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-400">Driving License:</span>
+                      <span className={formData.drivingLicense ? "text-green-400" : "text-red-400"}>
+                        {formData.drivingLicense ? "✓ Uploaded" : "✗ Required"}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-400">Address Proof:</span>
+                      <span className={formData.addressProof ? "text-green-400" : "text-red-400"}>
+                        {formData.addressProof ? "✓ Uploaded" : "✗ Required"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
 
-            {/* Submit Button */}
-            <div className="mt-8 flex justify-end gap-4">
-              <button
-                type="button"
-                onClick={() => navigate('/my-profile')}
-                className="px-6 py-3 border border-gray-600 rounded-lg text-gray-300 hover:bg-gray-700 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-8 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg font-medium hover:from-orange-600 hover:to-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
-              >
-                {loading && (
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                )}
-                {loading ? 'Submitting...' : 'Submit KYC'}
-              </button>
-            </div>
+                {/* Action Buttons */}
+                <div className="mt-8 flex justify-end gap-4">
+                  {!kycSubmitted ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => navigate('/my-profile')}
+                        className="px-6 py-3 border border-gray-600 rounded-lg text-gray-300 hover:bg-gray-700 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={loading || !formData.idProof || !formData.addressProof || !formData.drivingLicense}
+                        className="px-8 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg font-medium hover:from-orange-600 hover:to-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+                      >
+                        {loading && (
+                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        )}
+                        {loading ? (kycSubmitted ? 'Updating...' : 'Submitting...') : (kycSubmitted ? 'Update KYC' : 'Submit KYC')}
+                      </button>
+                    </>
+                  ) : (
+                    (() => {
+                      const hoursSinceSubmission = kycSubmittedTime ? 
+                        (Date.now() - kycSubmittedTime.getTime()) / (1000 * 60 * 60) : 0;
+                      
+                      if (hoursSinceSubmission < 12) {
+                        return (
+                          <>
+                            <div className="flex items-center gap-3 text-green-400">
+                              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                              <span className="text-sm font-medium">KYC Submitted Successfully</span>
+                            </div>
+                            
+                            <button
+                              onClick={() => navigate('/kyc')}
+                              className="mt-4 flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600 transition-colors"
+                            >
+                              <Edit2 size={16} className="mr-2" />
+                              Update KYC Details
+                            </button>
+                          </>
+                        );
+                      } else {
+                        return (
+                          <div className="flex items-center gap-3 text-blue-400">
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span className="text-sm font-medium">KYC Already Submitted</span>
+                          </div>
+                        );
+                      }
+                    })()
+                  )}
+                </div>
+              </>
+            )}
+            
+            {/* Personal Info Tab Buttons */}
+            {activeTab === 'personal' && (
+              <div className="mt-8 flex justify-end gap-4">
+                <button
+                  type="button"
+                  onClick={() => navigate('/my-profile')}
+                  className="px-6 py-3 border border-gray-600 rounded-lg text-gray-300 hover:bg-gray-700 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('documents')}
+                  className="px-8 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg font-medium hover:from-orange-600 hover:to-orange-700 transition-all flex items-center gap-2"
+                >
+                  Next
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+            )}
           </form>
         </div>
       </div>
