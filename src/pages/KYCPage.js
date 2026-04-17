@@ -472,7 +472,13 @@ const KYCPage = ({ user }) => {
 
                 {/* Action Buttons */}
                 <div className="mt-8 flex justify-end gap-4">
-                  {!kycSubmitted ? (
+                  {(() => {
+                const hoursSinceSubmission = kycSubmittedTime ? 
+                  (Date.now() - kycSubmittedTime.getTime()) / (1000 * 60 * 60) : 0;
+                
+                // Show normal form if not submitted OR can still update (within 12 hours)
+                return !kycSubmitted || hoursSinceSubmission < 12;
+              })() ? (
                     <>
                       <button
                         type="button"
@@ -493,40 +499,13 @@ const KYCPage = ({ user }) => {
                       </button>
                     </>
                   ) : (
-                    (() => {
-                      const hoursSinceSubmission = kycSubmittedTime ? 
-                        (Date.now() - kycSubmittedTime.getTime()) / (1000 * 60 * 60) : 0;
-                      
-                      if (hoursSinceSubmission < 12) {
-                        return (
-                          <>
-                            <div className="flex items-center gap-3 text-green-400">
-                              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                              <span className="text-sm font-medium">KYC Submitted Successfully</span>
-                            </div>
-                            
-                            <button
-                              onClick={() => navigate('/kyc')}
-                              className="mt-4 flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600 transition-colors"
-                            >
-                              <Edit2 size={16} className="mr-2" />
-                              Update KYC Details
-                            </button>
-                          </>
-                        );
-                      } else {
-                        return (
-                          <div className="flex items-center gap-3 text-blue-400">
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <span className="text-sm font-medium">KYC Already Submitted</span>
-                          </div>
-                        );
-                      }
-                    })()
+                    // Show "Already Submitted" message only after 12 hours
+                    <div className="flex items-center gap-3 text-blue-400">
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span className="text-sm font-medium">KYC Already Submitted</span>
+                    </div>
                   )}
                 </div>
               </>
