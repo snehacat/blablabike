@@ -156,10 +156,17 @@ const authAPI = {
       // If backend is not available, provide mock OTP for demo
       if (err.response?.status === 403 || err.code === 'ERR_NETWORK') {
         console.log("Backend unavailable, using mock OTP...");
+        
+        // Generate mock OTP based on phone number for demo
+        const phoneStr = String(phone);
+        const mockOtp = phoneStr.length >= 10 ? phoneStr.slice(-6) : phoneStr.padStart(6, '0');
+        
         return {
           success: true,
-          message: "OTP sent successfully",
-          data: null
+          message: `OTP sent successfully. For demo, use: ${mockOtp}`,
+          data: {
+            mockOtp: mockOtp
+          }
         };
       }
       throw err;
@@ -185,6 +192,22 @@ const authAPI = {
       // If backend is not available, provide mock OTP verification for demo
       if (err.response?.status === 403 || err.code === 'ERR_NETWORK') {
         console.log("Backend unavailable, using mock OTP verification...");
+        
+        // Generate a consistent OTP based on phone number for demo
+        const phoneStr = String(phone);
+        const mockOtp = phoneStr.length >= 10 ? phoneStr.slice(-6) : phoneStr.padStart(6, '0');
+        
+        // Validate OTP
+        if (String(otp) !== mockOtp) {
+          console.log("Invalid OTP:", otp, "Expected:", mockOtp);
+          return {
+            success: false,
+            message: "Invalid OTP. Please try again.",
+            error: "OTP_MISMATCH"
+          };
+        }
+        
+        console.log("OTP validated successfully:", otp);
         
         // First try to get profile data from localStorage
         try {
@@ -232,7 +255,6 @@ const authAPI = {
         }
         
         // Generate a simple name from phone number for demo
-        const phoneStr = String(phone);
         const userName = phoneStr.length >= 10 ? `User ${phoneStr.slice(-4)}` : `User ${phoneStr}`;
         return {
           success: true,
