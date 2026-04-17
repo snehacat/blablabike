@@ -13,10 +13,15 @@ const Navbar = ({ user, onLoginClick, onSignupClick, onLogout, onProfileClick })
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const navLinks = [
+  const publicNavLinks = [
     { label: 'Home', to: '/' },
     { label: 'Browse Rides', to: '/browse' },
     { label: 'Post a Ride', to: '/post-ride' },
+  ];
+
+  const privateNavLinks = [
+    { label: 'My Profile', to: '/my-profile' },
+    { label: 'KYC', to: '/kyc' },
     { label: 'Admin', to: '/admin' },
   ];
 
@@ -42,7 +47,23 @@ const Navbar = ({ user, onLoginClick, onSignupClick, onLogout, onProfileClick })
           <div className="flex items-center gap-4">
             {/* Desktop links */}
             <div className="hidden md:flex items-center gap-1">
-              {navLinks.map(({ label, to }) => (
+              {/* Public links - always visible */}
+              {publicNavLinks.map(({ label, to }) => (
+                <Link
+                  key={to}
+                  to={to}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    isActive(to)
+                      ? 'text-orange-DEFAULT bg-orange-DEFAULT bg-opacity-10'
+                      : 'text-gray-300 hover:text-white hover:bg-white hover:bg-opacity-5'
+                  }`}
+                >
+                  {label}
+                </Link>
+              ))}
+              
+              {/* Private links - only when logged in */}
+              {user && privateNavLinks.map(({ label, to }) => (
                 <Link
                   key={to}
                   to={to}
@@ -61,24 +82,6 @@ const Navbar = ({ user, onLoginClick, onSignupClick, onLogout, onProfileClick })
             <div className="hidden md:flex items-center gap-3">
               {user ? (
                 <div className="flex items-center gap-3">
-                  <button
-                    onClick={onProfileClick}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl glass hover:bg-white hover:bg-opacity-10 transition-all"
-                  >
-                    <img
-                      src={user.avatar || `https://i.pravatar.cc/32?u=${user.email}`}
-                      alt=""
-                      className="w-7 h-7 rounded-full object-cover ring-2 ring-orange-DEFAULT ring-opacity-50"
-                      onError={(e) => {
-                        console.log('Navbar avatar error:', e);
-                        console.log('User data:', user);
-                        console.log('Avatar URL:', user.avatar);
-                      }}
-                    />
-                    <span className="text-sm font-medium text-white">
-                      {user.fullName?.split(' ')[0] || user.email?.split('@')[0]}
-                    </span>
-                  </button>
                   <button
                     onClick={onLogout}
                     className="btn-outline px-4 py-1.5 text-sm"
@@ -115,7 +118,22 @@ const Navbar = ({ user, onLoginClick, onSignupClick, onLogout, onProfileClick })
       {/* Mobile menu */}
       {isMenuOpen && (
         <div className="md:hidden glass-dark border-t border-white border-opacity-10 px-4 py-4 space-y-1">
-          {navLinks.map(({ label, to }) => (
+          {/* Public links - always visible */}
+          {publicNavLinks.map(({ label, to }) => (
+            <Link
+              key={to}
+              to={to}
+              onClick={() => setIsMenuOpen(false)}
+              className={`block px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                isActive(to) ? 'text-orange-DEFAULT bg-orange-DEFAULT bg-opacity-10' : 'text-gray-300 hover:text-white hover:bg-white hover:bg-opacity-5'
+              }`}
+            >
+              {label}
+            </Link>
+          ))}
+          
+          {/* Private links - only when logged in */}
+          {user && privateNavLinks.map(({ label, to }) => (
             <Link
               key={to}
               to={to}

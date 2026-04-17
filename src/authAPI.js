@@ -26,76 +26,77 @@ const authAPI = {
 
   // Login with phone + password
   loginWithPassword: async ({ phone, password }) => {
-    const res = await api.post('/login/password', { phone, password });
-    return res.data; // { success, message, data: { token, fullName, email, phone, ... } }
+    const requestData = { phone: String(phone), password: String(password) };
+    console.log("LOGIN PASSWORD REQUEST DATA:", requestData);
+    console.log("LOGIN PASSWORD REQUEST URL:", publicApi.defaults.baseURL + '/login/password');
+    
+    try {
+      const res = await publicApi.post('/login/password', requestData);
+      console.log("LOGIN PASSWORD RESPONSE:", res.data);
+      console.log("LOGIN PASSWORD STATUS:", res.status);
+      return res.data; // { success, message, data: { token, fullName, email, phone, ... } }
+    } catch (err) {
+      console.log("LOGIN PASSWORD ERROR:", err.response?.data);
+      console.log("LOGIN PASSWORD ERROR STATUS:", err.response?.status);
+      console.log("LOGIN PASSWORD FULL ERROR:", err);
+      throw err;
+    }
   },
 
   // Login with phone + OTP (if you want to add OTP login later)
   loginSendOtp: async (phone) => {
-    const res = await publicApi.post('/login/send-otp', { phone });
-    return res.data; // { success, message, data: null }
+    const requestData = { phone: String(phone) };
+    console.log("SEND OTP REQUEST DATA:", requestData);
+    console.log("SEND OTP REQUEST URL:", publicApi.defaults.baseURL + '/login/send-otp');
+    
+    try {
+      const res = await publicApi.post('/login/send-otp', requestData);
+      console.log("SEND OTP RESPONSE:", res.data);
+      console.log("SEND OTP STATUS:", res.status);
+      return res.data; // { success, message, data: null }
+    } catch (err) {
+      console.log("SEND OTP ERROR:", err.response?.data);
+      console.log("SEND OTP ERROR STATUS:", err.response?.status);
+      console.log("SEND OTP FULL ERROR:", err);
+      throw err;
+    }
   },
   loginVerifyOtp: async ({ phone, otp }) => {
     try {
-      const res = await publicApi.post('/login/verify-otp', { phone, otp });
+      const requestData = { phone: String(phone), otp: String(otp) };
+      console.log("REQUEST DATA:", requestData);
+      console.log("REQUEST URL:", publicApi.defaults.baseURL + '/login/verify-otp');
       
-      // If backend returns proper JSON, use it
-      if (res.data && typeof res.data === 'object') {
-        return res.data;
-      }
-      
-      // If backend returns plain text, create expected response
-      if (typeof res.data === 'string') {
-        // Backend might be returning just a success message
-        // We need to create a mock token response
-        return {
-          success: true,
-          message: res.data || "OTP verified successfully",
-          data: {
-            token: "mock-token-" + Date.now(), // Temporary token
-            fullName: "User",
-            email: "user@example.com",
-            phone: phone,
-            role: "user",
-            kycStatus: "VERIFIED"
-          }
-        };
-      }
-      
-      // Fallback response
-      return {
-        success: true,
-        message: "OTP verified successfully",
-        data: {
-          token: "mock-token-" + Date.now(),
-          fullName: "User",
-          email: "user@example.com",
-          phone: phone,
-          role: "user",
-          kycStatus: "VERIFIED"
-        }
-      };
-      
-    } catch (error) {
-      console.error('Login OTP error:', error);
-      
-      // If error response contains data, try to parse it
-      if (error.response?.data) {
-        const errorData = error.response.data;
-        
-        // If backend returned plain text error
-        if (typeof errorData === 'string') {
-          throw new Error(errorData);
-        }
-        
-        // If backend returned HTML error page
-        if (typeof errorData === 'string' && errorData.includes('<html>')) {
-          throw new Error('Server error - please try again');
-        }
-      }
-      
-      throw error;
+      const res = await publicApi.post('/login/verify-otp', requestData);
+      console.log("SUCCESS RESPONSE:", res.data);
+      console.log("RESPONSE TYPE:", typeof res.data);
+      return res.data;
+    } catch (err) {
+      console.log("ERROR RESPONSE:", err.response?.data);
+      console.log("ERROR TYPE:", typeof err.response?.data);
+      console.log("STATUS:", err.response?.status);
+      console.log("HEADERS:", err.response?.headers);
+      console.log("FULL ERROR:", err);
+      throw err;
     }
+  },
+
+  // Get user profile
+  getProfile: async () => {
+    const res = await api.get('/users/profile');
+    return res.data;
+  },
+
+  // Update user profile
+  updateProfile: async (profileData) => {
+    const res = await api.put('/users/profile', profileData);
+    return res.data;
+  },
+
+  // Change password
+  changePassword: async (passwordData) => {
+    const res = await api.post('/auth/change-password', passwordData);
+    return res.data;
   },
 };
 
