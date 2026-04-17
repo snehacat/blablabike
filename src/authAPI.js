@@ -1,14 +1,23 @@
 import axios from 'axios';
+import { Loader } from 'lucide-react';
+import getApiConfig from './config/api';
+
+const apiConfig = getApiConfig();
 
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_BASE_URL || 'https://bike-cytc.onrender.com/api/auth',
-  headers: { 'Content-Type': 'application/json' },
+  baseURL: apiConfig.baseURL,
+  timeout: apiConfig.timeout,
+  headers: {
+    'Content-Type': 'application/json'
+  }
 });
 
-// Separate API instance for login OTP (no auth headers needed)
 const publicApi = axios.create({
-  baseURL: process.env.REACT_APP_API_BASE_URL || 'https://bike-cytc.onrender.com/api/auth',
-  headers: { 'Content-Type': 'application/json' },
+  baseURL: apiConfig.baseURL,
+  timeout: apiConfig.timeout,
+  headers: {
+    'Content-Type': 'application/json'
+  }
 });
 
 const authAPI = {

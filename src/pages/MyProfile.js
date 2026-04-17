@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Mail, Phone, Calendar, Shield, Car, Star, Edit2, Camera, Lock, Check, X, ArrowRight } from 'lucide-react';
 import authAPI from '../authAPI';
+import getApiConfig from '../config/api';
 
 const MyProfile = ({ user, onUpdateUser }) => {
   const navigate = useNavigate();
@@ -34,19 +35,39 @@ const MyProfile = ({ user, onUpdateUser }) => {
     try {
       setLoading(true);
       
+      const apiConfig = getApiConfig();
+      console.log('API Config:', apiConfig);
+      
       // TODO: Replace with backend API when available
       // Future implementation:
-      // const token = localStorage.getItem('token');
-      // const response = await fetch('https://bike-cytc.onrender.com/api/users/profile', {
-      //   headers: {
-      //     'Authorization': `Bearer ${token}`,
-      //     'Content-Type': 'application/json'
-      //   }
-      // });
-      // const data = await response.json();
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const response = await fetch(`${apiConfig.baseURL}/users/profile`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          const data = await response.json();
+          console.log('Backend profile response:', data);
+          
+          if (data.success) {
+            setProfileData(data.data);
+            setEditForm({
+              fullName: data.data.fullName,
+              email: data.data.email,
+              phone: data.data.phone
+            });
+            return;
+          }
+        } catch (err) {
+          console.log('Backend API not available, using localStorage fallback');
+        }
+      }
       
-      // For now, use localStorage and user data
-      console.log('Fetching profile data...');
+      // Fallback to localStorage and user data
+      console.log('Fetching profile data from localStorage...');
       
       // Try to get profile from localStorage first
       const savedProfile = localStorage.getItem('userProfile');
