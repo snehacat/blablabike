@@ -22,11 +22,11 @@ const MyProfile = ({ user, onUpdateUser }) => {
   const fileInputRef = useRef(null);
 
   // Check KYC status and submission time from localStorage
-  const [kycStatus, setKycStatus] = useState(() => {
+  const [kycStatus] = useState(() => {
     return localStorage.getItem('kycStatus') || 'PENDING';
   });
   
-  const [kycSubmittedTime, setKycSubmittedTime] = useState(() => {
+  const [kycSubmittedTime] = useState(() => {
     const stored = localStorage.getItem('kycSubmittedTime');
     return stored ? new Date(stored) : null;
   });
@@ -274,7 +274,6 @@ const MyProfile = ({ user, onUpdateUser }) => {
   const getStatusColor = (status) => {
     switch (status?.toUpperCase()) {
       case 'VERIFIED': return 'text-green-600 bg-green-100';
-      case 'SUBMITTED': return 'text-blue-600 bg-blue-100';
       case 'SUBMITTED': return 'text-blue-600 bg-blue-100';
       case 'PENDING': return 'text-yellow-600 bg-yellow-100';
       case 'REJECTED': return 'text-red-600 bg-red-100';

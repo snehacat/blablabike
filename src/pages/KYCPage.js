@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, User, FileText, AlertCircle, Upload, ArrowLeft, Edit2 } from 'lucide-react';
+import { Shield, User, FileText, AlertCircle, Upload, ArrowLeft } from 'lucide-react';
 
 // Last updated: 2026-04-18 19:15 - Next button fix deployed
 
@@ -29,7 +29,7 @@ const KYCPage = ({ user }) => {
   const [kycSubmitted, setKycSubmitted] = useState(false);
 
   // Check if KYC was submitted and track time for Update Details button
-  const [kycSubmittedTime, setKycSubmittedTime] = useState(() => {
+  const [kycSubmittedTime] = useState(() => {
     const stored = localStorage.getItem('kycSubmittedTime');
     return stored ? new Date(stored) : null;
   });
