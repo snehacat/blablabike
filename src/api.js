@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://bike-cytc.onrender.com/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -57,8 +57,10 @@ export const userAPI = {
 
 // Auth APIs
 export const authAPI = {
-  login: (credentials) => api.post('/auth/login', credentials),
+  login: (credentials) => api.post('/auth/login/password', credentials),
   register: (userData) => api.post('/auth/register', userData),
+  loginSendOtp: (phone) => api.post('/auth/login/send-otp', { phone }),
+  loginVerifyOtp: ({ phone, otp }) => api.post('/auth/login/verify-otp', { phone, otp }),
 };
 
 // Stats API

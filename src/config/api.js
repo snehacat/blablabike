@@ -1,26 +1,11 @@
 // API Configuration for different environments
 const getApiConfig = () => {
-  const isDevelopment = process.env.NODE_ENV === 'development';
-  const isProduction = process.env.NODE_ENV === 'production';
-  
-  if (isDevelopment) {
-    return {
-      baseURL: 'https://bike-cytc.onrender.com/api',
-      timeout: 10000,
-    };
-  }
-  
-  if (isProduction) {
-    // For production, use the same backend URL
-    return {
-      baseURL: 'https://bike-cytc.onrender.com/api',
-      timeout: 10000,
-    };
-  }
-  
+  const baseURL = process.env.REACT_APP_API_URL?.trim() || 'https://bike-cytc.onrender.com/api';
+  const timeout = 20000; // allow more time for backend response
+
   return {
-    baseURL: 'https://bike-cytc.onrender.com/api',
-    timeout: 10000,
+    baseURL,
+    timeout,
   };
 };
 

@@ -2,6 +2,8 @@ import axios from 'axios';
 import getApiConfig from './config/api';
 
 const apiConfig = getApiConfig();
+const isLocalBackend = apiConfig.baseURL.includes('localhost') || apiConfig.baseURL.includes('127.0.0.1');
+console.log('Resolved API URL:', apiConfig.baseURL, 'timeout:', apiConfig.timeout, 'isLocalBackend:', isLocalBackend);
 
 const api = axios.create({
   baseURL: apiConfig.baseURL,
@@ -10,6 +12,20 @@ const api = axios.create({
     'Content-Type': 'application/json'
   }
 });
+
+// Request interceptor to add auth token
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 const publicApi = axios.create({
   baseURL: apiConfig.baseURL,
@@ -22,13 +38,13 @@ const publicApi = axios.create({
 const authAPI = {
   // Registration (sends OTP; OTP verification completes account creation)
   register: async (userData) => {
-    const res = await api.post('/register', userData);
+    const res = await api.post('/auth/register', userData);
     return res.data; // { success, message, data: null }
   },
 
   // Registration OTP verification (creates account + returns token/profile)
   verifyRegistrationOtp: async ({ phone, otp }) => {
-    const res = await api.post('/verify-registration-otp', { phone, otp });
+    const res = await api.post('/auth/verify-registration-otp', { phone, otp });
     return res.data; // { success, message, data: { token, fullName, email, phone, ... } }
   },
 
@@ -36,15 +52,19 @@ const authAPI = {
   loginWithPassword: async ({ phone, password }) => {
     const requestData = { phone: String(phone), password: String(password) };
     console.log("LOGIN PASSWORD REQUEST DATA:", requestData);
-    console.log("LOGIN PASSWORD REQUEST URL:", publicApi.defaults.baseURL + '/login/password');
+    console.log("LOGIN PASSWORD REQUEST URL:", publicApi.defaults.baseURL + '/auth/login/password');
     
     try {
-      const res = await publicApi.post('/login/password', requestData);
+      const res = await publicApi.post('/auth/login/password', requestData);
       console.log("LOGIN PASSWORD RESPONSE:", res.data);
       console.log("LOGIN PASSWORD STATUS:", res.status);
       
       // Try to get profile data to get user's actual name
       let userData = res.data.data;
+      
+      // Set token temporarily for profile fetch
+      localStorage.setItem('token', userData.token);
+      
       try {
         const profileData = await authAPI.getProfile();
         console.log("Profile data found:", profileData);
@@ -66,9 +86,9 @@ const authAPI = {
       console.log("LOGIN PASSWORD ERROR STATUS:", err.response?.status);
       console.log("LOGIN PASSWORD FULL ERROR:", err);
       
-      // If backend is not available, provide mock login for demo
-      if (err.response?.status === 403 || err.code === 'ERR_NETWORK') {
-        console.log("Backend unavailable, using mock login...");
+      // Only use mock fallback for a local backend during development
+      if (isLocalBackend && (err.response?.status === 403 || err.code === 'ERR_NETWORK' || err.code === 'ECONNABORTED' || err.message?.toLowerCase().includes('timeout'))) {
+        console.log("Local backend unavailable, using mock login...");
         
         // First try to get profile data from localStorage
         try {
@@ -141,10 +161,10 @@ const authAPI = {
   loginSendOtp: async (phone) => {
     const requestData = { phone: String(phone) };
     console.log("SEND OTP REQUEST DATA:", requestData);
-    console.log("SEND OTP REQUEST URL:", publicApi.defaults.baseURL + '/login/send-otp');
+    console.log("SEND OTP REQUEST URL:", publicApi.defaults.baseURL + '/auth/login/send-otp');
     
     try {
-      const res = await publicApi.post('/login/send-otp', requestData);
+      const res = await publicApi.post('/auth/login/send-otp', requestData);
       console.log("SEND OTP RESPONSE:", res.data);
       console.log("SEND OTP STATUS:", res.status);
       return res.data; // { success, message, data: null }
@@ -152,15 +172,12 @@ const authAPI = {
       console.log("SEND OTP ERROR:", err.response?.data);
       console.log("SEND OTP ERROR STATUS:", err.response?.status);
       console.log("SEND OTP FULL ERROR:", err);
-      
-      // If backend is not available, provide mock OTP for demo
-      if (err.response?.status === 403 || err.code === 'ERR_NETWORK') {
-        console.log("Backend unavailable, using mock OTP...");
-        
-        // Generate mock OTP based on phone number for demo
+
+      const isNetworkFailure = err.code === 'ERR_NETWORK' || err.code === 'ECONNABORTED' || err.message?.toLowerCase().includes('timeout');
+      if (isLocalBackend && isNetworkFailure) {
+        console.log("Local backend unavailable, using mock OTP...");
         const phoneStr = String(phone);
         const mockOtp = phoneStr.length >= 10 ? phoneStr.slice(-6) : phoneStr.padStart(6, '0');
-        
         return {
           success: true,
           message: `OTP sent successfully. For demo, use: ${mockOtp}`,
@@ -169,6 +186,7 @@ const authAPI = {
           }
         };
       }
+
       throw err;
     }
   },
@@ -176,9 +194,9 @@ const authAPI = {
     try {
       const requestData = { phone: String(phone), otp: String(otp) };
       console.log("REQUEST DATA:", requestData);
-      console.log("REQUEST URL:", publicApi.defaults.baseURL + '/login/verify-otp');
+      console.log("REQUEST URL:", publicApi.defaults.baseURL + '/auth/login/verify-otp');
       
-      const res = await publicApi.post('/login/verify-otp', requestData);
+      const res = await publicApi.post('/auth/login/verify-otp', requestData);
       console.log("SUCCESS RESPONSE:", res.data);
       console.log("RESPONSE TYPE:", typeof res.data);
       return res.data;
@@ -188,16 +206,12 @@ const authAPI = {
       console.log("STATUS:", err.response?.status);
       console.log("HEADERS:", err.response?.headers);
       console.log("FULL ERROR:", err);
-      
-      // If backend is not available, provide mock OTP verification for demo
-      if (err.response?.status === 403 || err.code === 'ERR_NETWORK') {
-        console.log("Backend unavailable, using mock OTP verification...");
-        
-        // Generate a consistent OTP based on phone number for demo
+
+      const isNetworkFailure = err.code === 'ERR_NETWORK' || err.code === 'ECONNABORTED' || err.message?.toLowerCase().includes('timeout');
+      if (isLocalBackend && isNetworkFailure) {
+        console.log("Local backend unavailable, using mock OTP verification...");
         const phoneStr = String(phone);
         const mockOtp = phoneStr.length >= 10 ? phoneStr.slice(-6) : phoneStr.padStart(6, '0');
-        
-        // Validate OTP
         if (String(otp) !== mockOtp) {
           console.log("Invalid OTP:", otp, "Expected:", mockOtp);
           return {
@@ -206,12 +220,9 @@ const authAPI = {
             error: "OTP_MISMATCH"
           };
         }
-        
         console.log("OTP validated successfully:", otp);
-        
-        // First try to get profile data from localStorage
         try {
-          // Check for profile data in userProfile key (where MyProfile stores it)
+          localStorage.setItem('token', "mock_token_" + Date.now());
           const storedProfile = localStorage.getItem('userProfile');
           if (storedProfile) {
             const profileData = JSON.parse(storedProfile);
@@ -230,8 +241,6 @@ const authAPI = {
               }
             };
           }
-          
-          // Also check user key as fallback
           const storedUser = localStorage.getItem('user');
           if (storedUser) {
             const userData = JSON.parse(storedUser);
@@ -253,8 +262,6 @@ const authAPI = {
         } catch (error) {
           console.log("No stored profile data found for OTP, using phone-based name");
         }
-        
-        // Generate a simple name from phone number for demo
         const userName = phoneStr.length >= 10 ? `User ${phoneStr.slice(-4)}` : `User ${phoneStr}`;
         return {
           success: true,

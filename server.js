@@ -13,8 +13,9 @@ const mockUsers = [
   {
     id: 1,
     name: 'Rahul Sharma',
-    email: 'rahul@example.com',
-    phone: '+91 98765 43210',
+    email: 'rahul@gmail.com',
+    phone: '6876543210',
+    password: 'Rahul@1234',
     rating: 4.8,
     totalRides: 156,
     verified: true,
@@ -24,7 +25,8 @@ const mockUsers = [
     id: 2,
     name: 'Priya Patel',
     email: 'priya@example.com',
-    phone: '+91 87654 32109',
+    phone: '8765432109',
+    password: 'Priya@1234',
     rating: 4.9,
     totalRides: 203,
     verified: true,
@@ -34,7 +36,8 @@ const mockUsers = [
     id: 3,
     name: 'Amit Kumar',
     email: 'amit@example.com',
-    phone: '+91 76543 21098',
+    phone: '7654321098',
+    password: 'Amit@1234',
     rating: 4.7,
     totalRides: 89,
     verified: true,
@@ -245,36 +248,165 @@ app.get('/api/users/:id', (req, res) => {
   res.json(user);
 });
 
-// User authentication (mock)
-app.post('/api/auth/login', (req, res) => {
-  const { email, password } = req.body;
-  const user = mockUsers.find(u => u.email === email);
+// User authentication (mock with phone and OTP)
+const otpStore = {}; // Temporary store for OTPs
+
+app.post('/api/auth/register', (req, res) => {
+  const { fullName, email, phone, password } = req.body;
   
-  if (user) {
-    res.json({
-      user,
-      token: 'mock-jwt-token-' + user.id
-    });
-  } else {
-    res.status(401).json({ error: 'Invalid credentials' });
+  // Check if user already exists
+  const existingUser = mockUsers.find(u => u.phone === phone || u.email === email);
+  if (existingUser) {
+    return res.status(400).json({ success: false, message: 'User already exists' });
   }
+  
+  // Generate mock OTP
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  otpStore[phone] = { otp, data: { fullName, email, phone, password }, expires: Date.now() + 5 * 60 * 1000 }; // 5 min
+  
+  console.log(`Mock OTP for ${phone}: ${otp}`);
+  
+  res.json({
+    success: true,
+    message: `OTP sent to ${phone}. Please verify to complete registration.`,
+    data: null
+  });
 });
 
-// User registration (mock)
-app.post('/api/auth/register', (req, res) => {
+app.post('/api/auth/verify-registration-otp', (req, res) => {
+  const { phone, otp } = req.body;
+  
+  const stored = otpStore[phone];
+  if (!stored || stored.otp !== otp || Date.now() > stored.expires) {
+    return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
+  }
+  
+  // Create user
   const newUser = {
     id: mockUsers.length + 1,
-    ...req.body,
+    ...stored.data,
     rating: 0,
     totalRides: 0,
-    verified: false,
+    verified: true,
     avatar: `https://images.unsplash.com/photo-${Math.random()}?w=100&h=100&fit=crop&crop=face`
   };
   
   mockUsers.push(newUser);
-  res.status(201).json({
-    user: newUser,
-    token: 'mock-jwt-token-' + newUser.id
+  delete otpStore[phone];
+  
+  res.json({
+    success: true,
+    message: 'Phone verified! Account created successfully.',
+    data: {
+      token: 'mock-jwt-token-' + newUser.id,
+      fullName: newUser.name,
+      email: newUser.email,
+      phone: newUser.phone,
+      role: 'USER',
+      kycStatus: 'PENDING'
+    }
+  });
+});
+
+app.post('/api/auth/login/password', (req, res) => {
+  const { phone, password } = req.body;
+  const user = mockUsers.find(u => u.phone === phone);
+  
+  if (user && user.password === password) {
+    res.json({
+      success: true,
+      message: 'Login successful',
+      data: {
+        token: 'mock-jwt-token-' + user.id,
+        fullName: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: 'USER',
+        kycStatus: 'PENDING'
+      }
+    });
+  } else {
+    res.status(401).json({ success: false, message: 'Invalid credentials' });
+  }
+});
+
+app.post('/api/auth/login/send-otp', (req, res) => {
+  const { phone } = req.body;
+  const user = mockUsers.find(u => u.phone === phone);
+  
+  if (!user) {
+    return res.status(404).json({ success: false, message: 'User not found' });
+  }
+  
+  // Generate mock OTP
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  otpStore[phone] = { otp, expires: Date.now() + 5 * 60 * 1000 };
+  
+  console.log(`Mock OTP for login ${phone}: ${otp}`);
+  
+  res.json({
+    success: true,
+    message: `OTP sent to ${phone}`,
+    data: null
+  });
+});
+
+app.post('/api/auth/login/verify-otp', (req, res) => {
+  const { phone, otp } = req.body;
+  
+  const stored = otpStore[phone];
+  if (!stored || stored.otp !== otp || Date.now() > stored.expires) {
+    return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
+  }
+  
+  const user = mockUsers.find(u => u.phone === phone);
+  delete otpStore[phone];
+  
+  res.json({
+    success: true,
+    message: 'Login successful',
+    data: {
+      token: 'mock-jwt-token-' + user.id,
+      fullName: user.name,
+      email: user.email,
+      phone: user.phone,
+      role: 'USER',
+      kycStatus: 'PENDING'
+    }
+  });
+});
+
+app.post('/api/auth/change-password', (req, res) => {
+  // Mock implementation
+  res.json({
+    success: true,
+    message: 'Password changed successfully.',
+    data: null
+  });
+});
+
+app.get('/api/users/profile', (req, res) => {
+  // Mock profile - in real app, get from token
+  const mockProfile = {
+    fullName: 'Rahul Sharma',
+    email: 'rahul@gmail.com',
+    phone: '6876543210',
+    memberSince: 'April 2026',
+    kycStatus: 'PENDING',
+    phoneVerified: true,
+    aadhaarVerified: false,
+    canPostRides: false,
+    totalRidesPosted: 0,
+    totalRidesBooked: 0,
+    vehicles: [],
+    averageRating: 0.0,
+    totalReviews: 0,
+    recentReviews: []
+  };
+  res.json({
+    success: true,
+    message: 'Profile fetched successfully',
+    data: mockProfile
   });
 });
 

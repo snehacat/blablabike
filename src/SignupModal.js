@@ -15,8 +15,9 @@ const SignupModal = ({ onClose, onSuccess, onSwitchToLogin }) => {
   const [showPassword, setShowPassword] = useState(false);
   // Explicit refs to keep hook order stable across renders.
   const otpRefs = [useRef(), useRef(), useRef(), useRef(), useRef(), useRef()];
-
-  
+  const cleanPhone = (phone) => {
+    return phone.replace(/\D/g, '').slice(-10);
+  };  
   const handleChange = (e) => { setForm({ ...form, [e.target.name]: e.target.value }); setError(''); setSuccess(''); };
 
   const handleOtpChange = (index, value) => {
@@ -32,15 +33,29 @@ const SignupModal = ({ onClose, onSuccess, onSwitchToLogin }) => {
     if (e.key === 'Backspace' && !otp[index] && index > 0) otpRefs[index - 1].current?.focus();
   };
 
+  const resetModal = () => {
+    setStep(1);
+    setForm({ fullName: '', email: '', phone: '', password: '' });
+    setOtp(Array.from({ length: OTP_LENGTH }, () => ''));
+    setLoading(false);
+    setOtpLoading(false);
+    setError('');
+    setSuccess('');
+    if (typeof onClose === 'function') {
+      onClose();
+    }
+  };
+
   const handleRegister = async (e) => {
     e.preventDefault();
     const { fullName, email, phone, password } = form;
     if (!fullName || !email || !phone || !password) { setError('Please fill in all fields.'); return; }
+    const cleanedPhone = cleanPhone(phone);
     // Backend examples use 10-digit phone numbers (without '+'), but accept 10-15 digits with optional '+'
-    if (!/^\+?\d{10,15}$/.test(phone)) { setError('Phone must be valid (e.g. 6876543210).'); return; }
+    if (cleanedPhone.length !== 10) { setError('Phone must be valid 10-digit number.'); return; }
     setLoading(true);
     try {
-      const resp = await authAPI.register({ fullName, email, phone, password });
+      const resp = await authAPI.register({ fullName, email, phone: cleanedPhone, password });
       console.log('Registration response:', resp); // Debug log
       if (!resp?.success) {
         setError(resp?.message || 'Registration failed. Try again.');
@@ -66,7 +81,8 @@ const SignupModal = ({ onClose, onSuccess, onSwitchToLogin }) => {
     setOtpLoading(true);
     try {
       const { fullName, email, phone, password } = form;
-      await authAPI.register({ fullName, email, phone, password });
+      const cleanedPhone = cleanPhone(phone);
+      await authAPI.register({ fullName, email, phone: cleanedPhone, password });
       setOtp(Array.from({ length: OTP_LENGTH }, () => ''));
       setTimeout(() => otpRefs[0].current?.focus(), 50);
     } catch (e) {
@@ -82,7 +98,8 @@ const SignupModal = ({ onClose, onSuccess, onSwitchToLogin }) => {
     if (otpStr.length !== OTP_LENGTH) { setError(`Please enter the complete ${OTP_LENGTH}-digit OTP.`); return; }
     setLoading(true);
     try {
-      const resp = await authAPI.verifyRegistrationOtp({ phone: form.phone, otp: otpStr });
+      const cleanedPhone = cleanPhone(form.phone);
+      const resp = await authAPI.verifyRegistrationOtp({ phone: cleanedPhone, otp: otpStr });
       if (!resp?.success || !resp?.data?.token) {
         setError(resp?.message || 'Invalid OTP. Please try again.');
         return;
@@ -111,9 +128,16 @@ const SignupModal = ({ onClose, onSuccess, onSwitchToLogin }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 overflow-y-auto py-4"
-      style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)' }}>
-      <div className="relative w-full max-w-md rounded-2xl overflow-hidden" style={modalStyle}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center px-4 overflow-y-auto py-4"
+      style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)' }}
+      onClick={resetModal}
+    >
+      <div
+        className="relative w-full max-w-md rounded-2xl overflow-hidden"
+        style={modalStyle}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="h-1 w-full" style={{ background: 'linear-gradient(90deg, #FF7000, #ff9a3c)' }} />
 
         {/* Step progress */}
@@ -131,7 +155,11 @@ const SignupModal = ({ onClose, onSuccess, onSwitchToLogin }) => {
         </div>
 
         <div className="p-8 pt-5">
-          <button onClick={onClose} className="absolute top-5 right-5 text-gray-500 hover:text-white transition-colors">
+          <button
+            type="button"
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); resetModal(); }}
+            className="absolute top-5 right-5 text-gray-500 hover:text-white transition-colors"
+          >
             <X size={20} />
           </button>
 

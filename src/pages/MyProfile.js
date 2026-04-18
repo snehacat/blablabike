@@ -22,14 +22,34 @@ const MyProfile = ({ user, onUpdateUser }) => {
   const fileInputRef = useRef(null);
 
   // Check KYC status and submission time from localStorage
-  const [kycStatus] = useState(() => {
+  const [kycStatus, setKycStatus] = useState(() => {
     return localStorage.getItem('kycStatus') || 'PENDING';
   });
   
-  const [kycSubmittedTime] = useState(() => {
+  const [kycSubmittedTime, setKycSubmittedTime] = useState(() => {
     const stored = localStorage.getItem('kycSubmittedTime');
     return stored ? new Date(stored) : null;
   });
+
+  // Auto-redirect based on final KYC status
+  useEffect(() => {
+    if (kycStatus === 'VERIFIED') {
+      navigate('/kyc/success');
+    } else if (kycStatus === 'FAILED') {
+      navigate('/kyc/failure');
+    }
+  }, [kycStatus, navigate]);
+
+  // Listen for KYC status changes from backend
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'kycStatus') {
+        setKycStatus(e.newValue || 'PENDING');
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   // Check if user is logged in
   useEffect(() => {
@@ -276,6 +296,7 @@ const MyProfile = ({ user, onUpdateUser }) => {
       case 'VERIFIED': return 'text-green-600 bg-green-100';
       case 'SUBMITTED': return 'text-blue-600 bg-blue-100';
       case 'PENDING': return 'text-yellow-600 bg-yellow-100';
+      case 'FAILED': return 'text-red-600 bg-red-100';
       case 'REJECTED': return 'text-red-600 bg-red-100';
       default: return 'text-gray-600 bg-gray-100';
     }
@@ -472,18 +493,13 @@ const MyProfile = ({ user, onUpdateUser }) => {
                   
                   if (hoursSinceSubmission < 12) {
                     return (
-                      <>
-                        <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor('SUBMITTED')}`}>
-                          KYC Submitted
-                        </span>
-                        <button
-                          onClick={() => navigate('/kyc')}
-                          className="flex items-center gap-2 px-3 py-1 bg-green-500 text-white rounded-full text-sm hover:bg-green-600 transition-colors"
-                        >
-                          Update KYC
-                          <Edit2 size={14} />
-                        </button>
-                      </>
+                      <button
+                        onClick={() => navigate('/kyc')}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-full text-sm hover:bg-blue-600 transition-colors"
+                      >
+                        Update KYC
+                        <Edit2 size={14} />
+                      </button>
                     );
                   } else {
                     return (
@@ -496,6 +512,10 @@ const MyProfile = ({ user, onUpdateUser }) => {
               ) : kycStatus === 'VERIFIED' ? (
                 <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor('VERIFIED')}`}>
                   KYC Verified
+                </span>
+              ) : kycStatus === 'FAILED' ? (
+                <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor('FAILED')}`}>
+                  KYC Failed
                 </span>
               ) : (
                 <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor('PENDING')}`}>

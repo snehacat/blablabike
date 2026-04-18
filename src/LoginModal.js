@@ -32,7 +32,9 @@ const LoginModal = ({ onClose, onSuccess, onSwitchToSignup }) => {
     setShowPassword(false);
     setLoading(false);
     setOtpLoading(false);
-    onClose();
+    if (typeof onClose === 'function') {
+      onClose();
+    }
   };
 
   const handleChange = (e) => {
@@ -101,12 +103,12 @@ const LoginModal = ({ onClose, onSuccess, onSwitchToSignup }) => {
       console.log("RESPONSE TYPE:", typeof resp);
       console.log("RESPONSE KEYS:", resp ? Object.keys(resp) : 'null');
 
-      if (resp) {
+      if (resp?.success) {
         setOtpSent(true);
-        setSuccess('OTP sent!');
+        setSuccess(resp.message || 'OTP sent!');
         setTimeout(() => otpRefs[0].current?.focus(), 100);
       } else {
-        setError('Failed to send OTP');
+        setError(resp?.message || 'Failed to send OTP');
       }
     } catch (err) {
       console.log("FULL ERROR OBJECT:", err);
@@ -205,19 +207,28 @@ const LoginModal = ({ onClose, onSuccess, onSwitchToSignup }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 lg:p-8"
-      style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)' }}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 lg:p-8"
+      style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)' }}
+      onClick={resetModal}
+    >
 
-      <div className="w-full max-w-md sm:max-w-lg lg:max-w-xl rounded-2xl overflow-hidden bg-[#12121a] border border-gray-700 shadow-2xl relative">
+      <div
+        className="w-full max-w-md sm:max-w-lg lg:max-w-xl rounded-2xl overflow-hidden bg-[#12121a] border border-gray-700 shadow-2xl relative"
+        onClick={(e) => e.stopPropagation()}
+      >
         
         {/* Header */}
         <div className="relative p-6 sm:p-8 border-b border-gray-700">
-          <button 
-            onClick={resetModal} 
-            className="absolute right-4 top-4 text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-800"
-          >
-            <X size={20} />
-          </button>
+          {!otpSent && (
+            <button 
+              type="button"
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); resetModal(); }}
+              className="absolute right-4 top-4 text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-800"
+            >
+              <X size={20} />
+            </button>
+          )}
           
           <div className="text-center">
             <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-full mb-4">
