@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, User, FileText, AlertCircle, Upload, ArrowLeft } from 'lucide-react';
 
-// Last updated: 2026-04-18 19:15 - Next button fix deployed
+// Last updated: 2026-04-18 19:40 - ESLint fixes deployed
 
 const KYCPage = ({ user }) => {
   const navigate = useNavigate();
