@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, User, FileText, AlertCircle, Upload, ArrowLeft, Edit2 } from 'lucide-react';
 
+// Last updated: 2026-04-18 19:15 - Next button fix deployed
+
 const KYCPage = ({ user }) => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('personal');
