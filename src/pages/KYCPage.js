@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, User, FileText, AlertCircle, Upload, ArrowLeft } from 'lucide-react';
+import { Shield, User, FileText, AlertCircle, Upload, ArrowLeft, CheckCircle, Edit2 } from 'lucide-react';
 
 // Last updated: 2026-04-18 19:40 - ESLint fixes deployed
 
 const KYCPage = ({ user }) => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('personal');
+  // Initialize with empty form - stored data will be loaded in useEffect
   const [formData, setFormData] = useState({
-    fullName: user?.fullName || '',
-    email: user?.email || '',
-    phone: user?.phone || '',
+    fullName: '',
+    email: '',
+    phone: '',
     dateOfBirth: '',
     address: '',
     city: '',
@@ -27,6 +28,10 @@ const KYCPage = ({ user }) => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [kycSubmitted, setKycSubmitted] = useState(false);
+  const [filesPreviouslyUploaded, setFilesPreviouslyUploaded] = useState(false);
+  const [showUpdateNotification, setShowUpdateNotification] = useState(false);
+  const [showUpdateClickNotification, setShowUpdateClickNotification] = useState(false);
+  const [modifiedFields, setModifiedFields] = useState(new Set());
 
   // Check if KYC was submitted and track time for Update Details button
   const [kycSubmittedTime] = useState(() => {
@@ -41,28 +46,129 @@ const KYCPage = ({ user }) => {
       return;
     }
     
-    // Load previously submitted KYC data if exists
-    const storedKycData = localStorage.getItem('kycSubmissionData');
-    if (storedKycData) {
-      try {
-        const kycData = JSON.parse(storedKycData);
-        setFormData(kycData);
-        setKycSubmitted(true);
-      } catch (error) {
-        console.log('Error loading stored KYC data:', error);
+    // Always load the latest KYC data from localStorage
+    const loadLatestKycData = () => {
+      const storedKycData = localStorage.getItem('kycSubmissionData');
+      const filesUploaded = localStorage.getItem('kycFilesUploaded') === 'true';
+      setFilesPreviouslyUploaded(filesUploaded);
+      
+      if (storedKycData) {
+        try {
+          const kycData = JSON.parse(storedKycData);
+          console.log('Loading latest KYC data:', kycData);
+          // Merge stored data with user data as fallback for missing fields
+          const mergedData = {
+            fullName: kycData.fullName || user?.fullName || '',
+            email: kycData.email || user?.email || '',
+            phone: kycData.phone || user?.phone || '',
+            dateOfBirth: kycData.dateOfBirth || '',
+            address: kycData.address || '',
+            city: kycData.city || '',
+            state: kycData.state || '',
+            pincode: kycData.pincode || '',
+            aadhaarNumber: kycData.aadhaarNumber || '',
+            panNumber: kycData.panNumber || '',
+            drivingLicenseNumber: kycData.drivingLicenseNumber || '',
+            idProof: null,
+            addressProof: null,
+            drivingLicense: null
+          };
+          console.log('Merged KYC data:', mergedData);
+          setFormData(mergedData);
+          setKycSubmitted(true);
+          
+          // Show notification that data has been loaded
+          if (kycData.fullName || kycData.email) {
+            setShowUpdateNotification(true);
+            setTimeout(() => setShowUpdateNotification(false), 3000);
+            // Reset modified fields when loading new data
+            setModifiedFields(new Set());
+          }
+        } catch (error) {
+          console.log('Error loading stored KYC data:', error);
+        }
       }
-    }
+    };
+
+    loadLatestKycData();
+    
+    // Add event listener for storage changes (in case of multiple tabs)
+    const handleStorageChange = (e) => {
+      if (e.key === 'kycSubmissionData') {
+        loadLatestKycData();
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, [user, navigate]);
+
+  // Refresh data when component gains focus (user returns from profile)
+  React.useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && user) {
+        const storedKycData = localStorage.getItem('kycSubmissionData');
+        const filesUploaded = localStorage.getItem('kycFilesUploaded') === 'true';
+        setFilesPreviouslyUploaded(filesUploaded);
+        
+        if (storedKycData) {
+          try {
+            const kycData = JSON.parse(storedKycData);
+            console.log('Refreshing KYC data on visibility change:', kycData);
+            // Merge stored data with user data as fallback for missing fields
+            const mergedData = {
+              fullName: kycData.fullName || user?.fullName || '',
+              email: kycData.email || user?.email || '',
+              phone: kycData.phone || user?.phone || '',
+              dateOfBirth: kycData.dateOfBirth || '',
+              address: kycData.address || '',
+              city: kycData.city || '',
+              state: kycData.state || '',
+              pincode: kycData.pincode || '',
+              aadhaarNumber: kycData.aadhaarNumber || '',
+              panNumber: kycData.panNumber || '',
+              drivingLicenseNumber: kycData.drivingLicenseNumber || '',
+              idProof: null,
+              addressProof: null,
+              drivingLicense: null
+            };
+            console.log('Merged KYC data on refresh:', mergedData);
+            setFormData(mergedData);
+            setKycSubmitted(true);
+          } catch (error) {
+            console.log('Error refreshing KYC data:', error);
+          }
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [user]);
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
     if (files) {
       setFormData({ ...formData, [name]: files[0] });
+      setModifiedFields(prev => new Set([...prev, name]));
     } else {
       setFormData({ ...formData, [name]: value });
+      setModifiedFields(prev => new Set([...prev, name]));
     }
     setError('');
     setSuccess('');
+  };
+
+  const handleUpdateClick = () => {
+    // Show green tick notification when update button is clicked
+    setShowUpdateClickNotification(true);
+    setTimeout(() => setShowUpdateClickNotification(false), 2000);
   };
 
   const handleSubmit = async (e) => {
@@ -102,14 +208,41 @@ const KYCPage = ({ user }) => {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      setSuccess('KYC documents submitted successfully! Our team will verify your documents within 24-48 hours.');
+      // Create detailed success message
+      const updatedFields = [];
+      if (formData.fullName) updatedFields.push('Name');
+      if (formData.email) updatedFields.push('Email');
+      if (formData.phone) updatedFields.push('Phone');
+      if (formData.address) updatedFields.push('Address');
+      if (formData.aadhaarNumber) updatedFields.push('Aadhaar');
+      if (formData.drivingLicenseNumber) updatedFields.push('Driving License');
+      
+      const filesUpdated = formData.idProof || formData.addressProof || formData.drivingLicense;
+      
+      let successMessage = '';
+      if (kycSubmitted) {
+        successMessage = `KYC updated successfully! Updated: ${updatedFields.join(', ')}`;
+        if (filesUpdated) successMessage += ' and documents';
+        successMessage += '. Your updated information will be reviewed within 24-48 hours.';
+      } else {
+        successMessage = 'KYC documents submitted successfully! Our team will verify your documents within 24-48 hours.';
+      }
+      
+      setSuccess(successMessage);
       
       // Update user KYC status (temporary localStorage solution)
       localStorage.setItem('kycStatus', 'SUBMITTED');
       localStorage.setItem('kycSubmittedTime', new Date().toISOString());
       
-      // Save KYC data for future editing
-      localStorage.setItem('kycSubmissionData', JSON.stringify(formData));
+      // Save KYC data for future editing (exclude files as they can't be stored in localStorage)
+      const kycDataToStore = { ...formData };
+      delete kycDataToStore.idProof;
+      delete kycDataToStore.addressProof;
+      delete kycDataToStore.drivingLicense;
+      
+      console.log('Saving KYC data to localStorage:', kycDataToStore);
+      localStorage.setItem('kycSubmissionData', JSON.stringify(kycDataToStore));
+      localStorage.setItem('kycFilesUploaded', 'true'); // Flag to indicate files were uploaded
       
       // Mark KYC as submitted to hide submit button
       setKycSubmitted(true);
@@ -126,7 +259,15 @@ const KYCPage = ({ user }) => {
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">Full Name *</label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-sm font-medium text-gray-300">Full Name *</label>
+            {modifiedFields.has('fullName') && (
+              <div className="flex items-center gap-1 text-green-400">
+                <CheckCircle size={14} />
+                <span className="text-xs">Updated</span>
+              </div>
+            )}
+          </div>
           <input
             type="text"
             name="fullName"
@@ -137,7 +278,15 @@ const KYCPage = ({ user }) => {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">Email Address *</label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-sm font-medium text-gray-300">Email Address *</label>
+            {modifiedFields.has('email') && (
+              <div className="flex items-center gap-1 text-green-400">
+                <CheckCircle size={14} />
+                <span className="text-xs">Updated</span>
+              </div>
+            )}
+          </div>
           <input
             type="email"
             name="email"
@@ -197,7 +346,15 @@ const KYCPage = ({ user }) => {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-300 mb-2">Address *</label>
+        <div className="flex items-center justify-between mb-2">
+          <label className="block text-sm font-medium text-gray-300">Address *</label>
+          {modifiedFields.has('address') && (
+            <div className="flex items-center gap-1 text-green-400">
+              <CheckCircle size={14} />
+              <span className="text-xs">Updated</span>
+            </div>
+          )}
+        </div>
         <textarea
           name="address"
           value={formData.address}
@@ -296,6 +453,9 @@ const KYCPage = ({ user }) => {
             {formData.idProof && (
               <p className="text-green-400 text-sm mt-2">{formData.idProof.name}</p>
             )}
+            {filesPreviouslyUploaded && !formData.idProof && (
+              <p className="text-yellow-400 text-sm mt-2">Previously uploaded (re-upload to update)</p>
+            )}
           </div>
         </div>
         <div>
@@ -316,6 +476,9 @@ const KYCPage = ({ user }) => {
             </label>
             {formData.drivingLicense && (
               <p className="text-green-400 text-sm mt-2">{formData.drivingLicense.name}</p>
+            )}
+            {filesPreviouslyUploaded && !formData.drivingLicense && (
+              <p className="text-yellow-400 text-sm mt-2">Previously uploaded (re-upload to update)</p>
             )}
           </div>
         </div>
@@ -338,6 +501,9 @@ const KYCPage = ({ user }) => {
             </label>
             {formData.addressProof && (
               <p className="text-green-400 text-sm mt-2">{formData.addressProof.name}</p>
+            )}
+            {filesPreviouslyUploaded && !formData.addressProof && (
+              <p className="text-yellow-400 text-sm mt-2">Previously uploaded (re-upload to update)</p>
             )}
           </div>
         </div>
@@ -367,12 +533,28 @@ const KYCPage = ({ user }) => {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-4 sm:p-6">
+      {/* Update Notification */}
+      {showUpdateNotification && (
+        <div className="fixed top-4 left-4 right-4 sm:left-auto sm:right-4 sm:top-4 bg-green-600 text-white px-4 sm:px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2 animate-pulse max-w-sm sm:max-w-none">
+          <CheckCircle size={16} className="flex-shrink-0" />
+          <span className="text-sm sm:text-base">Your KYC data has been loaded and updated!</span>
+        </div>
+      )}
+
+      {/* Update Click Notification */}
+      {showUpdateClickNotification && (
+        <div className="fixed top-20 left-4 right-4 sm:left-auto sm:right-4 sm:top-20 bg-green-500 text-white px-4 sm:px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2 animate-pulse max-w-sm sm:max-w-none">
+          <CheckCircle size={16} className="flex-shrink-0" />
+          <span className="text-sm sm:text-base">Update initiated! Your changes are being processed.</span>
+        </div>
+      )}
+      
       <div className="max-w-4xl mx-auto w-full">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
             <div>
-              <h2 className="text-2xl font-bold text-white">
+              <h2 className="text-xl sm:text-2xl font-bold text-white">
                 {kycSubmitted ? 'Update KYC Details' : 'KYC Verification'}
               </h2>
               {kycSubmitted && (
@@ -383,19 +565,20 @@ const KYCPage = ({ user }) => {
             </div>
             <button
               onClick={() => navigate('/my-profile')}
-              className="flex items-center gap-2 px-4 py-2 text-gray-400 hover:text-white transition-colors"
+              className="flex items-center gap-2 px-4 py-2 text-gray-400 hover:text-white transition-colors self-start sm:self-auto"
             >
               <ArrowLeft size={20} />
-              Back to Profile
+              <span className="hidden sm:inline">Back to Profile</span>
+              <span className="sm:hidden">Back</span>
             </button>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-full flex items-center justify-center">
-              <Shield size={24} className="text-white" />
+          <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+            <div className="w-16 h-16 sm:w-12 sm:h-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-full flex items-center justify-center">
+              <Shield size={28} className="text-white sm:size-24" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold">KYC Verification</h1>
-              <p className="text-gray-400">Complete your identity verification to unlock all features</p>
+              <h1 className="text-2xl sm:text-3xl font-bold">KYC Verification</h1>
+              <p className="text-gray-400 text-sm sm:text-base">Complete your identity verification to unlock all features</p>
             </div>
           </div>
         </div>
@@ -409,6 +592,24 @@ const KYCPage = ({ user }) => {
         {success && (
           <div className="mb-6 p-4 bg-green-900/20 border border-green-800/50 rounded-lg text-green-300">
             {success}
+          </div>
+        )}
+
+        {/* Update Mode Indicator */}
+        {kycSubmitted && (
+          <div className="mb-6 p-4 bg-blue-900/20 border border-blue-800/50 rounded-lg text-blue-300">
+            <div className="flex items-center gap-2">
+              <Edit2 size={16} />
+              <span className="font-medium">Update Mode</span>
+            </div>
+            <p className="text-sm mt-1 text-blue-200">
+              You're updating your previously submitted KYC information. Your data has been pre-filled below.
+            </p>
+            {filesPreviouslyUploaded && (
+              <p className="text-sm mt-2 text-blue-200">
+                Documents you previously uploaded are marked as "Previously uploaded". Re-upload only if you want to update them.
+              </p>
+            )}
           </div>
         )}
 
@@ -493,6 +694,7 @@ const KYCPage = ({ user }) => {
                         type="submit"
                         disabled={loading || !formData.idProof || !formData.addressProof || !formData.drivingLicense}
                         className="px-8 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg font-medium hover:from-orange-600 hover:to-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+                        onClick={kycSubmitted ? handleUpdateClick : undefined}
                       >
                         {loading && (
                           <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
