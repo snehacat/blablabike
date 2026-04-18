@@ -22,8 +22,30 @@ const LoginModal = ({ onClose, onSuccess, onSwitchToSignup }) => {
   return phone.replace(/\D/g, '').slice(-10);
 };
 
+  const resetModal = () => {
+    setForm({ phone: '', password: '' });
+    setOtp(Array.from({ length: OTP_LENGTH }, () => ''));
+    setOtpSent(false);
+    setLoginMethod('password');
+    setError('');
+    setSuccess('');
+    setShowPassword(false);
+    setLoading(false);
+    setOtpLoading(false);
+    onClose();
+  };
+
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    
+    // Phone input validation - only allow digits
+    if (name === 'phone') {
+      const digitsOnly = value.replace(/\D/g, '');
+      setForm({ ...form, [name]: digitsOnly });
+    } else {
+      setForm({ ...form, [name]: value });
+    }
+    
     setError('');
     setSuccess('');
   };
@@ -55,11 +77,17 @@ const LoginModal = ({ onClose, onSuccess, onSwitchToSignup }) => {
     console.log("FINAL PHONE SENT:", phone);
     console.log("PHONE LENGTH:", phone.length);
 
-    // TEMPORARY: Bypass validation for testing
+    // Strict phone validation for OTP login
     if (phone.length !== 10) {
-      console.log("VALIDATION FAILED - BUT BYPASSING FOR TESTING");
-      // setError('Enter valid 10-digit phone number');
-      // return;
+      setError('Please enter a valid 10-digit phone number');
+      return;
+    }
+
+    // Additional validation: ensure input contains only digits
+    const phoneDigitsOnly = form.phone.replace(/\D/g, '');
+    if (phoneDigitsOnly.length !== 10) {
+      setError('Phone number must contain exactly 10 digits');
+      return;
     }
 
     setOtpLoading(true);
@@ -185,7 +213,7 @@ const LoginModal = ({ onClose, onSuccess, onSwitchToSignup }) => {
         {/* Header */}
         <div className="relative p-6 sm:p-8 border-b border-gray-700">
           <button 
-            onClick={onClose} 
+            onClick={resetModal} 
             className="absolute right-4 top-4 text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-800"
           >
             <X size={20} />

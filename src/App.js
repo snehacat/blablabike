@@ -34,7 +34,25 @@ const App = () => {
     }
   }, []);
 
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    // Initialize user state from localStorage to prevent logout on refresh
+    try {
+      const storedUser = localStorage.getItem('user');
+      const storedToken = localStorage.getItem('token');
+      
+      // Only restore user if both user and token exist
+      if (storedUser && storedToken) {
+        return JSON.parse(storedUser);
+      }
+      return null;
+    } catch (error) {
+      console.log('Error parsing stored user on init:', error);
+      // Clear corrupted data
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
+      return null;
+    }
+  });
   const [showLogin, setShowLogin] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
   const [showProfile, setShowProfile] = useState(false);

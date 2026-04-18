@@ -124,7 +124,7 @@ const KYCPage = ({ user }) => {
 
   const renderPersonalInfo = () => (
     <div className="space-y-6">
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">Full Name *</label>
           <input
@@ -208,7 +208,7 @@ const KYCPage = ({ user }) => {
         />
       </div>
 
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">City *</label>
           <input
@@ -248,7 +248,7 @@ const KYCPage = ({ user }) => {
 
   const renderDocumentUpload = () => (
     <div className="space-y-6">
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">Aadhaar Number *</label>
           <input
@@ -276,7 +276,7 @@ const KYCPage = ({ user }) => {
         </div>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">ID Proof (Aadhaar Card) *</label>
           <div className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center">
@@ -366,8 +366,8 @@ const KYCPage = ({ user }) => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-6">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gray-900 text-white p-4 sm:p-6">
+      <div className="max-w-4xl mx-auto w-full">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-8">
@@ -413,7 +413,7 @@ const KYCPage = ({ user }) => {
         )}
 
         {/* KYC Form */}
-        <div className="bg-gray-800 rounded-2xl p-8">
+        <div className="bg-gray-800 rounded-2xl p-4 sm:p-6 lg:p-8">
           {/* Tab Navigation */}
           <div className="flex gap-1 mb-8 p-1 bg-gray-700 rounded-lg">
             <button
@@ -473,7 +473,7 @@ const KYCPage = ({ user }) => {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="mt-8 flex justify-end gap-4">
+                <div className="mt-8 flex flex-col sm:flex-row sm:justify-end gap-4">
                   {(() => {
                 const hoursSinceSubmission = kycSubmittedTime ? 
                   (Date.now() - kycSubmittedTime.getTime()) / (1000 * 60 * 60) : 0;
@@ -485,7 +485,7 @@ const KYCPage = ({ user }) => {
                       <button
                         type="button"
                         onClick={() => navigate('/my-profile')}
-                        className="px-6 py-3 border border-gray-600 rounded-lg text-gray-300 hover:bg-gray-700 transition-colors"
+                        className="w-full sm:w-auto px-6 py-3 border border-gray-600 rounded-lg text-gray-300 hover:bg-gray-700 transition-colors"
                       >
                         Cancel
                       </button>
@@ -515,18 +515,18 @@ const KYCPage = ({ user }) => {
             
             {/* Personal Info Tab Buttons */}
             {activeTab === 'personal' && (
-              <div className="mt-8 flex justify-end gap-4">
+              <div className="mt-8 flex flex-col sm:flex-row sm:justify-end gap-4">
                 <button
                   type="button"
                   onClick={() => navigate('/my-profile')}
-                  className="px-6 py-3 border border-gray-600 rounded-lg text-gray-300 hover:bg-gray-700 transition-colors"
+                  className="w-full sm:w-auto px-6 py-3 border border-gray-600 rounded-lg text-gray-300 hover:bg-gray-700 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
                   onClick={() => setActiveTab('documents')}
-                  className="px-8 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg font-medium hover:from-orange-600 hover:to-orange-700 transition-all flex items-center gap-2"
+                  className="w-full sm:w-auto px-8 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg font-medium hover:from-orange-600 hover:to-orange-700 transition-all flex items-center gap-2"
                 >
                   Next
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
