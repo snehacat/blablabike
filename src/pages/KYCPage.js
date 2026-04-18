@@ -169,6 +169,19 @@ const KYCPage = ({ user }) => {
     // Show green tick notification when update button is clicked
     setShowUpdateClickNotification(true);
     setTimeout(() => setShowUpdateClickNotification(false), 2000);
+    
+    // Immediately save current form data to localStorage for real-time persistence
+    const kycDataToStore = { ...formData };
+    delete kycDataToStore.idProof;
+    delete kycDataToStore.addressProof;
+    delete kycDataToStore.drivingLicense;
+    
+    console.log('Immediate update - saving to localStorage:', kycDataToStore);
+    localStorage.setItem('kycSubmissionData', JSON.stringify(kycDataToStore));
+    localStorage.setItem('kycSubmittedTime', new Date().toISOString());
+    
+    // Show success message for immediate update
+    setSuccess('KYC information updated successfully! Your changes have been saved.');
   };
 
   const handleSubmit = async (e) => {
@@ -178,8 +191,8 @@ const KYCPage = ({ user }) => {
     setSuccess('');
 
     try {
-      // Check if all required documents are uploaded (only runs when submit button is clicked)
-      if (!formData.idProof || !formData.addressProof || !formData.drivingLicense) {
+      // Check if all required documents are uploaded (only for initial submission, not updates)
+      if (!kycSubmitted && (!formData.idProof || !formData.addressProof || !formData.drivingLicense)) {
         setError('Please upload all required documents (ID Proof, Address Proof, and Driving License) before submitting.');
         setLoading(false);
         return;
@@ -692,7 +705,7 @@ const KYCPage = ({ user }) => {
                       </button>
                       <button
                         type="submit"
-                        disabled={loading || !formData.idProof || !formData.addressProof || !formData.drivingLicense}
+                        disabled={loading}
                         className="px-8 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg font-medium hover:from-orange-600 hover:to-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
                         onClick={kycSubmitted ? handleUpdateClick : undefined}
                       >
