@@ -57,7 +57,6 @@ const KYCPage = ({ user }) => {
             email: kycData.email || user?.email || '',
             phone: kycData.phone || user?.phone || '',
             digilockerMobile: kycData.digilockerMobile || '',
-            digilockerMobile: kycData.digilockerMobile || '',
             dateOfBirth: kycData.dateOfBirth || '',
             address: kycData.address || '',
             city: kycData.city || '',
