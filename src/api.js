@@ -57,10 +57,21 @@ export const userAPI = {
 
 // Auth APIs
 export const authAPI = {
-  login: (credentials) => api.post('/auth/login/password', credentials),
+  login: (credentials) => api.post('/auth/login', credentials),
   register: (userData) => api.post('/auth/register', userData),
-  loginSendOtp: (phone) => api.post('/auth/login/send-otp', { phone }),
-  loginVerifyOtp: ({ phone, otp }) => api.post('/auth/login/verify-otp', { phone, otp }),
+};
+
+// DigiLocker APIs
+export const digilockerAPI = {
+  initiate: () => api.post('/digilocker/initiate'),
+  getStatus: () => api.get('/digilocker/status'),
+};
+
+// Vehicle APIs
+export const vehicleAPI = {
+  add: (vehicleData) => api.post('/vehicles', vehicleData),
+  getMyVehicles: () => api.get('/vehicles/my'),
+  deactivate: (vehicleId) => api.patch(`/vehicles/${vehicleId}/deactivate`),
 };
 
 // Stats API

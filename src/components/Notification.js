@@ -22,7 +22,7 @@ const Notification = ({ message, type = 'info', onClose, duration = 3000 }) => {
         return <Info size={20} className="text-blue-400" />;
     }
   };
-
+ 
   const getStyles = () => {
     switch (type) {
       case 'success':

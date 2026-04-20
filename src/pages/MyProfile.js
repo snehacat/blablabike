@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Mail, Phone, Calendar, Shield, Car, Star, Edit2, Camera, Lock, X, ArrowRight } from 'lucide-react';
+import { User, Mail, Phone, Calendar, Shield, Star, Edit2, Camera, Lock, X, ArrowRight, Zap, Plus, Trash2 } from 'lucide-react';
 import getApiConfig from '../config/api';
+import authAPI from '../authAPI';
 
+// Fixed Car import issue - Updated for 2-wheeler app
 const MyProfile = ({ user, onUpdateUser }) => {
   const navigate = useNavigate();
   const [profileData, setProfileData] = useState(null);
@@ -21,15 +23,196 @@ const MyProfile = ({ user, onUpdateUser }) => {
   const [previewImage, setPreviewImage] = useState(null);
   const fileInputRef = useRef(null);
 
-  // Check KYC status and submission time from localStorage
+  // Vehicle management state
+  const [vehicles, setVehicles] = useState([]);
+  const [vehicleLoading, setVehicleLoading] = useState(false);
+  const [showVehicleForm, setShowVehicleForm] = useState(false);
+  const [vehicleForm, setVehicleForm] = useState({
+    bikeNumber: '',
+    bikeName: '',
+    bikeModel: '',
+    bikeCompany: ''
+  });
+
+  
+
+
+  // Vehicle management functions
+  const fetchVehicles = async () => {
+    try {
+      setVehicleLoading(true);
+      console.log('Fetching vehicles...');
+      console.log('API URL: https://bike-cytc.onrender.com/api/vehicles/my');
+      
+      const response = await authAPI.getMyVehicles();
+      console.log('Vehicles response:', response);
+      
+      if (response && response.success) {
+        const vehicles = response.data || [];
+        console.log('Vehicles data:', vehicles);
+        setVehicles(vehicles);
+      }
+    } catch (err) {
+      console.error('Failed to fetch vehicles:', err);
+      setError('Failed to fetch vehicles');
+    } finally {
+      setVehicleLoading(false);
+    }
+  };
+
+  const handleAddVehicle = async () => {
+    if (!vehicleForm.bikeNumber || !vehicleForm.bikeName) {
+      setError('Please fill in bike number and name');
+      return;
+    }
+
+    try {
+      setVehicleLoading(true);
+      console.log('Adding vehicle...');
+      console.log('API URL: https://bike-cytc.onrender.com/api/vehicles');
+      console.log('Vehicle data:', vehicleForm);
+      
+      const response = await authAPI.addVehicle(vehicleForm);
+      console.log('Add vehicle response:', response);
+      
+      if (response && response.success) {
+        setSuccess('Vehicle added successfully!');
+        setVehicleForm({ bikeNumber: '', bikeName: '', bikeModel: '', bikeCompany: '' });
+        setShowVehicleForm(false);
+        fetchVehicles();
+      } else {
+        setError(response.message || 'Failed to add vehicle');
+      }
+    } catch (err) {
+      console.error('Add vehicle error:', err);
+      if (err.response?.status === 403) {
+        setError('Please complete KYC verification to add vehicles');
+      } else {
+        setError('Failed to add vehicle');
+      }
+    } finally {
+      setVehicleLoading(false);
+    }
+  };
+
+  const handleDeleteVehicle = async (vehicleId) => {
+    try {
+      setVehicleLoading(true);
+      const response = await authAPI.deleteVehicle(vehicleId);
+      if (response.success) {
+        setSuccess('Vehicle removed successfully!');
+        fetchVehicles();
+      } else {
+        setError(response.message || 'Failed to remove vehicle');
+      }
+    } catch (err) {
+      console.error('Delete vehicle error:', err);
+      setError('Failed to remove vehicle');
+    } finally {
+      setVehicleLoading(false);
+    }
+  };
+
+  // Check KYC status from localStorage
   const [kycStatus, setKycStatus] = useState(() => {
     return localStorage.getItem('kycStatus') || 'PENDING';
   });
-  
-  const [kycSubmittedTime, setKycSubmittedTime] = useState(() => {
-    const stored = localStorage.getItem('kycSubmittedTime');
-    return stored ? new Date(stored) : null;
-  });
+
+  // Local notification for DigiLocker status check
+  const [digiLockerMessage, setDigiLockerMessage] = useState('');
+  const [digiLockerMessageType, setDigiLockerMessageType] = useState(''); // 'success' or 'error'
+
+  // Check DigiLocker status and update KYC accordingly
+  const checkDigiLockerStatus = async () => {
+    // Clear previous messages
+    setDigiLockerMessage('');
+    setError('');
+    setSuccess('');
+    
+    try {
+      console.log('=== CHECKING DIGILOCKER STATUS FROM PROFILE ===');
+      console.log('Checking DigiLocker status in MyProfile...');
+      
+      // Check authentication
+      const token = localStorage.getItem('token');
+      console.log('Token exists:', !!token);
+      console.log('Token length:', token?.length);
+      
+      if (!token) {
+        setDigiLockerMessage('No authentication token found. Please log in again.');
+        setDigiLockerMessageType('error');
+        return;
+      }
+      
+      console.log('Making API call to GET /digilocker/status...');
+      const response = await authAPI.getDigiLockerStatus();
+      console.log('DigiLocker status response:', response);
+      
+      if (response && response.success) {
+        const data = response.data;
+        console.log('DigiLocker status data:', data);
+        console.log('DL Verified:', data.dlVerified);
+        console.log('DL Number:', data.dlNumber);
+        console.log('Can Post Rides:', data.canPostRides);
+        
+        if (data.dlVerified) {
+          // Update KYC status to VERIFIED only if DL is actually verified
+          localStorage.setItem('kycStatus', 'VERIFIED');
+          setKycStatus('VERIFIED');
+          console.log('KYC status updated to VERIFIED based on DigiLocker verification');
+          
+          // Update user data
+          const userData = JSON.parse(localStorage.getItem('user') || '{}');
+          userData.kycStatus = 'VERIFIED';
+          userData.dlVerified = true;
+          userData.canPostRides = data.canPostRides;
+          localStorage.setItem('user', JSON.stringify(userData));
+          
+          // Show local success message
+          setDigiLockerMessage(`DigiLocker verification completed! DL: ${data.dlNumber || 'Verified'}. You can now add vehicles.`);
+          setDigiLockerMessageType('success');
+        } else {
+          // Keep status as PENDING if DL not verified
+          localStorage.setItem('kycStatus', 'PENDING');
+          setKycStatus('PENDING');
+          console.log('KYC status remains PENDING - DigiLocker not verified yet');
+          
+          // Show local info message
+          setDigiLockerMessage('DigiLocker verification not yet completed. Please complete verification first.');
+          setDigiLockerMessageType('error');
+        }
+      } else {
+        setDigiLockerMessage(response?.message || 'Failed to check DigiLocker status.');
+        setDigiLockerMessageType('error');
+      }
+    } catch (err) {
+      console.error('=== DIGILOCKER STATUS CHECK ERROR ===');
+      console.error('Error:', err);
+      console.error('Status:', err.response?.status);
+      console.error('Status Text:', err.response?.statusText);
+      console.error('Response Data:', err.response?.data);
+      
+      if (err.response?.status === 403) {
+        setDigiLockerMessage('403 Forbidden: Authentication issue. Please check your login status or contact support.');
+        setDigiLockerMessageType('error');
+      } else {
+        setDigiLockerMessage('Failed to check DigiLocker status. Please try again.');
+        setDigiLockerMessageType('error');
+      }
+    }
+  };
+
+  useEffect(() => {
+    // Check DigiLocker status on component mount
+    checkDigiLockerStatus();
+  }, []);
+
+  // Load vehicles when KYC is verified
+  useEffect(() => {
+    if (kycStatus === 'VERIFIED') {
+      fetchVehicles();
+    }
+  }, [kycStatus]);
 
   // Auto-redirect based on final KYC status
   useEffect(() => {
@@ -291,6 +474,7 @@ const MyProfile = ({ user, onUpdateUser }) => {
     reader.readAsDataURL(avatarFile);
   };
 
+
   const getStatusColor = (status) => {
     switch (status?.toUpperCase()) {
       case 'VERIFIED': return 'text-green-600 bg-green-100';
@@ -456,6 +640,109 @@ const MyProfile = ({ user, onUpdateUser }) => {
         {/* Verification Status */}
         <div className="bg-gray-800 rounded-2xl p-8 mb-6">
           <h3 className="text-xl font-bold mb-6">Verification Status</h3>
+          
+          {/* DigiLocker Verification Section */}
+          <div className="bg-gray-700 rounded-lg p-6 mb-6">
+            {/* Heading */}
+            <div className="flex items-center gap-3 mb-4">
+              <Shield size={20} className="text-gray-400" />
+              <span className="font-semibold text-lg">DigiLocker Verification</span>
+            </div>
+            
+            {/* Status Badge */}
+            <div className="mb-4">
+              {kycStatus === 'PENDING' ? (
+                <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor('PENDING')}`}>
+                  DigiLocker Pending
+                </span>
+              ) : kycStatus === 'VERIFIED' ? (
+                <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor('VERIFIED')}`}>
+                  DigiLocker Verified
+                </span>
+              ) : (
+                <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor('PENDING')}`}>
+                  DigiLocker Pending
+                </span>
+              )}
+            </div>
+            
+            {/* Buttons - Below Heading */}
+            <div className="space-y-2 mb-4">
+              {kycStatus === 'PENDING' ? (
+                <>
+                  <button
+                    onClick={() => navigate('/kyc')}
+                    className="w-full flex items-center justify-center gap-2 px-3 py-1 bg-orange-500 text-white rounded-full text-sm hover:bg-orange-600 transition-colors"
+                  >
+                    Complete Verification
+                    <ArrowRight size={14} />
+                  </button>
+                  <button
+                    onClick={checkDigiLockerStatus}
+                    className="w-full flex items-center justify-center gap-2 px-3 py-1 bg-blue-500 text-white rounded-full text-sm hover:bg-blue-600 transition-colors"
+                  >
+                    Check Status
+                  </button>
+                </>
+              ) : kycStatus === 'VERIFIED' ? (
+                <button
+                  onClick={checkDigiLockerStatus}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-1 bg-blue-500 text-white rounded-full text-sm hover:bg-blue-600 transition-colors"
+                >
+                  Refresh
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={() => navigate('/kyc')}
+                    className="w-full flex items-center justify-center gap-2 px-3 py-1 bg-orange-500 text-white rounded-full text-sm hover:bg-orange-600 transition-colors"
+                  >
+                    Complete Verification
+                    <ArrowRight size={14} />
+                  </button>
+                  <button
+                    onClick={checkDigiLockerStatus}
+                    className="w-full flex items-center justify-center gap-2 px-3 py-1 bg-blue-500 text-white rounded-full text-sm hover:bg-blue-600 transition-colors"
+                  >
+                    Check Status
+                  </button>
+                </>
+              )}
+            </div>
+            
+            {/* Local Notification - Right Below Buttons */}
+            {digiLockerMessage && (
+              <div className={`p-3 rounded-lg text-sm ${
+                digiLockerMessageType === 'success' 
+                  ? 'bg-green-900 text-green-200 border border-green-700' 
+                  : 'bg-red-900 text-red-200 border border-red-700'
+              }`}>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-start gap-2">
+                    {digiLockerMessageType === 'success' ? (
+                      <svg className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    ) : (
+                      <svg className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    )}
+                    <span className="text-sm">{digiLockerMessage}</span>
+                  </div>
+                  <button
+                    onClick={() => setDigiLockerMessage('')}
+                    className="flex-shrink-0 hover:opacity-70 transition-opacity"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex items-center justify-between p-4 bg-gray-700 rounded-lg">
               <div className="flex items-center gap-3">
@@ -466,64 +753,136 @@ const MyProfile = ({ user, onUpdateUser }) => {
                 {profileData.phoneVerified ? 'Verified' : 'Pending'}
               </span>
             </div>
-            <div className="flex items-center justify-between p-4 bg-gray-700 rounded-lg">
-              <div className="flex items-center gap-3">
-                <Shield size={20} className="text-gray-400" />
-                <span>KYC Verification</span>
-              </div>
-              
-              {/* Show KYC status and buttons based on localStorage status */}
-              {kycStatus === 'PENDING' ? (
-                <>
-                  <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor('PENDING')}`}>
-                    KYC Pending
-                  </span>
+          </div>
+        </div>
+
+        {/* Vehicle Management - Only show when KYC is verified */}
+        {kycStatus === 'VERIFIED' ? (
+          <div className="bg-gray-800 rounded-2xl p-8 mb-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold flex items-center gap-2">
+                <Zap size={20} className="text-orange-400" />
+                My Vehicles
+              </h3>
+              <button
+                onClick={() => setShowVehicleForm(!showVehicleForm)}
+                className="flex items-center gap-2 bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors"
+              >
+                <Plus size={16} />
+                Add Vehicle
+              </button>
+            </div>
+
+            {/* Add Vehicle Form */}
+            {showVehicleForm && (
+              <div className="bg-gray-700 rounded-lg p-4 mb-6">
+                <h4 className="text-lg font-semibold mb-4">Add New Vehicle</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <input
+                    type="text"
+                    placeholder="Bike Number (e.g., UP80AB1234)"
+                    value={vehicleForm.bikeNumber}
+                    onChange={(e) => setVehicleForm({...vehicleForm, bikeNumber: e.target.value})}
+                    className="bg-gray-600 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Bike Name (e.g., Black Beast)"
+                    value={vehicleForm.bikeName}
+                    onChange={(e) => setVehicleForm({...vehicleForm, bikeName: e.target.value})}
+                    className="bg-gray-600 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Bike Model (e.g., Splendor Plus)"
+                    value={vehicleForm.bikeModel}
+                    onChange={(e) => setVehicleForm({...vehicleForm, bikeModel: e.target.value})}
+                    className="bg-gray-600 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Bike Company (e.g., Hero)"
+                    value={vehicleForm.bikeCompany}
+                    onChange={(e) => setVehicleForm({...vehicleForm, bikeCompany: e.target.value})}
+                    className="bg-gray-600 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+                <div className="flex gap-4">
                   <button
-                    onClick={() => navigate('/kyc')}
-                    className="flex items-center gap-2 px-3 py-1 bg-orange-500 text-white rounded-full text-sm hover:bg-orange-600 transition-colors"
+                    onClick={handleAddVehicle}
+                    disabled={vehicleLoading}
+                    className="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 disabled:opacity-50 transition-colors"
                   >
-                    Complete KYC
-                    <ArrowRight size={14} />
+                    {vehicleLoading ? 'Adding...' : 'Add Vehicle'}
                   </button>
-                </>
-              ) : kycStatus === 'SUBMITTED' ? (
-                (() => {
-                  const hoursSinceSubmission = kycSubmittedTime ? 
-                    (Date.now() - kycSubmittedTime.getTime()) / (1000 * 60 * 60) : 0;
-                  
-                  if (hoursSinceSubmission < 12) {
-                    return (
-                      <button
-                        onClick={() => navigate('/kyc')}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-full text-sm hover:bg-blue-600 transition-colors"
-                      >
-                        Update KYC
-                        <Edit2 size={14} />
-                      </button>
-                    );
-                  } else {
-                    return (
-                      <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor('SUBMITTED')}`}>
-                        KYC Submitted
-                      </span>
-                    );
-                  }
-                })()
-              ) : kycStatus === 'VERIFIED' ? (
-                <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor('VERIFIED')}`}>
-                  KYC Verified
-                </span>
-              ) : kycStatus === 'FAILED' ? (
-                <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor('FAILED')}`}>
-                  KYC Failed
-                </span>
-              ) : (
-                <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor('PENDING')}`}>
-                  KYC Pending
-                </span>
-              )}
+                  <button
+                    onClick={() => setShowVehicleForm(false)}
+                    className="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Vehicles List */}
+            {vehicles.length > 0 ? (
+              <div className="space-y-4">
+                {vehicles.map((vehicle) => (
+                  <div key={vehicle.id} className="bg-gray-700 rounded-lg p-4 flex items-center justify-between">
+                    <div>
+                      <h4 className="font-semibold text-lg">{vehicle.bikeName}</h4>
+                      <p className="text-gray-400">{vehicle.bikeNumber}</p>
+                      <p className="text-sm text-gray-500">{vehicle.bikeModel} - {vehicle.bikeCompany}</p>
+                    </div>
+                    <button
+                      onClick={() => handleDeleteVehicle(vehicle.id)}
+                      disabled={vehicleLoading}
+                      className="bg-red-500 text-white p-2 rounded-lg hover:bg-red-600 disabled:opacity-50 transition-colors"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-400">
+                <Zap size={48} className="mx-auto mb-4 opacity-50" />
+                <p>No vehicles added yet</p>
+                <p className="text-sm">Click "Add Vehicle" to get started</p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="bg-gray-800 rounded-2xl p-8 mb-6">
+            <div className="text-center py-8">
+              <Zap size={48} className="mx-auto mb-4 text-gray-500" />
+              <h3 className="text-xl font-bold mb-2">Vehicle Management</h3>
+              <p className="text-gray-400 mb-2">Complete verification to unlock your ride-sharing journey</p>
+              <p className="text-orange-400 text-sm mb-4">Add vehicles, post rides, and start earning! Your bike awaits its next adventure. </p>
+              <button
+                onClick={() => navigate('/kyc')}
+                className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-6 py-3 rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all transform hover:scale-105"
+              >
+                Complete Verification
+              </button>
             </div>
           </div>
+        )}
+
+        {/* Change Password */}
+        <div className="bg-gray-800 rounded-2xl p-8 mb-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-bold">Security</h3>
+            <button
+              onClick={() => setShowPasswordModal(true)}
+              className="flex items-center gap-2 bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
+            >
+              <Lock size={20} />
+              Change Password
+            </button>
+          </div>
+          <p className="text-gray-400">Last password change: Not available</p>
         </div>
 
         {/* Riding Stats */}
@@ -531,7 +890,7 @@ const MyProfile = ({ user, onUpdateUser }) => {
           <h3 className="text-xl font-bold mb-6">Riding Statistics</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="text-center">
-              <Car size={40} className="text-primary-orange mx-auto mb-2" />
+              <Star size={40} className="text-primary-orange mx-auto mb-2" />
               <div className="text-2xl font-bold">{profileData.totalRidesPosted}</div>
               <div className="text-gray-400">Rides Posted</div>
             </div>
@@ -546,21 +905,6 @@ const MyProfile = ({ user, onUpdateUser }) => {
               <div className="text-gray-400">Average Rating</div>
             </div>
           </div>
-        </div>
-
-        {/* Change Password */}
-        <div className="bg-gray-800 rounded-2xl p-8">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-bold">Security</h3>
-            <button
-              onClick={() => setShowPasswordModal(true)}
-              className="flex items-center gap-2 bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
-            >
-              <Lock size={20} />
-              Change Password
-            </button>
-          </div>
-          <p className="text-gray-400">Last password change: Not available</p>
         </div>
 
         {/* Password Change Modal */}
@@ -619,6 +963,7 @@ const MyProfile = ({ user, onUpdateUser }) => {
           </div>
         )}
 
+        
         {/* Notifications */}
         {error && (
           <div className="fixed top-4 right-4 bg-red-600 text-white px-6 py-3 rounded-lg shadow-lg z-50">

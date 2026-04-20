@@ -99,7 +99,7 @@ const SignupModal = ({ onClose, onSuccess, onSwitchToLogin }) => {
     setLoading(true);
     try {
       const cleanedPhone = cleanPhone(form.phone);
-      const resp = await authAPI.verifyRegistrationOtp({ phone: cleanedPhone, otp: otpStr });
+      const resp = await authAPI.verifyRegistrationOTP(cleanedPhone, otpStr);
       if (!resp?.success || !resp?.data?.token) {
         setError(resp?.message || 'Invalid OTP. Please try again.');
         return;
