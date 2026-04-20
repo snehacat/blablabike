@@ -42,7 +42,7 @@ const Home = ({ user, onSignupClick, onLoginClick, onProfileUpdate }) => {
   };
 
   return (
-    <div className="mesh-bg min-h-screen">
+    <div className="mesh-bg min-h-screen pt-20 sm:pt-24">
       <HeroSection bgIndex={bgIndex} setBgIndex={setBgIndex} stats={stats} user={user} navigate={navigate} onSignupClick={onSignupClick} />
       <HowItWorks />
       <CitiesSection navigate={navigate} />
@@ -63,7 +63,7 @@ const Home = ({ user, onSignupClick, onLoginClick, onProfileUpdate }) => {
 };
 
 const HeroSection = ({ bgIndex, setBgIndex, stats, user, navigate, onSignupClick }) => (
-  <section className="relative min-h-screen flex items-center overflow-hidden">
+  <section className="relative min-h-[calc(100vh-5rem)] sm:min-h-[calc(100vh-6rem)] flex items-center overflow-hidden pt-20 sm:pt-24">
     {heroBgs.map((src, i) => (
       <div key={i} className="carousel-slide absolute inset-0 bg-cover bg-center"
         style={{ backgroundImage: `url(${src})`, opacity: i === bgIndex ? 1 : 0 }} />

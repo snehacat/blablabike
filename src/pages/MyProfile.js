@@ -31,7 +31,8 @@ const MyProfile = ({ user, onUpdateUser }) => {
     bikeNumber: '',
     bikeName: '',
     bikeModel: '',
-    bikeCompany: ''
+    bikeCompany: '',
+    vehicleType: 'BIKE'
   });
 
   
@@ -77,7 +78,7 @@ const MyProfile = ({ user, onUpdateUser }) => {
       
       if (response && response.success) {
         setSuccess('Vehicle added successfully!');
-        setVehicleForm({ bikeNumber: '', bikeName: '', bikeModel: '', bikeCompany: '' });
+        setVehicleForm({ bikeNumber: '', bikeName: '', bikeModel: '', bikeCompany: '', vehicleType: 'BIKE' });
         setShowVehicleForm(false);
         fetchVehicles();
       } else {
@@ -98,16 +99,19 @@ const MyProfile = ({ user, onUpdateUser }) => {
   const handleDeleteVehicle = async (vehicleId) => {
     try {
       setVehicleLoading(true);
-      const response = await authAPI.deleteVehicle(vehicleId);
-      if (response.success) {
-        setSuccess('Vehicle removed successfully!');
+      console.log('Deactivating vehicle:', vehicleId);
+      const response = await authAPI.deactivateVehicle(vehicleId);
+      console.log('Deactivate response:', response);
+      
+      if (response && response.success) {
+        setSuccess('Vehicle deactivated successfully!');
         fetchVehicles();
       } else {
-        setError(response.message || 'Failed to remove vehicle');
+        setError(response?.message || 'Failed to deactivate vehicle');
       }
     } catch (err) {
-      console.error('Delete vehicle error:', err);
-      setError('Failed to remove vehicle');
+      console.error('Deactivate vehicle error:', err);
+      setError('Failed to deactivate vehicle');
     } finally {
       setVehicleLoading(false);
     }
@@ -214,14 +218,8 @@ const MyProfile = ({ user, onUpdateUser }) => {
     }
   }, [kycStatus]);
 
-  // Auto-redirect based on final KYC status
-  useEffect(() => {
-    if (kycStatus === 'VERIFIED') {
-      navigate('/kyc/success');
-    } else if (kycStatus === 'FAILED') {
-      navigate('/kyc/failure');
-    }
-  }, [kycStatus, navigate]);
+  // Auto-redirect removed - users should stay on My Profile page after verification
+  // This was causing users to be redirected to KYC success page instead of staying on profile
 
   // Listen for KYC status changes from backend
   useEffect(() => {
@@ -503,15 +501,16 @@ const MyProfile = ({ user, onUpdateUser }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-6">
+    <div className="min-h-screen bg-gray-900 text-white pt-20 sm:pt-24 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="bg-gray-800 rounded-2xl p-8 mb-6">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-3xl font-bold">My Profile</h1>
+        <div className="bg-gray-800 rounded-2xl p-6 sm:p-8 mb-6">
+          {/* Header - Vertical Layout */}
+          <div className="text-center mb-6">
+            <h1 className="text-2xl sm:text-3xl font-bold text-white mb-4">My Profile</h1>
             <button
               onClick={() => setEditing(!editing)}
-              className="flex items-center gap-2 bg-primary-orange text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
             >
               {editing ? <X size={20} /> : <Edit2 size={20} />}
               {editing ? 'Cancel' : 'Edit Profile'}
@@ -519,8 +518,8 @@ const MyProfile = ({ user, onUpdateUser }) => {
           </div>
 
           {/* Profile Info */}
-          <div className="flex items-center gap-6 mb-6">
-            <div className="relative">
+          <div className="text-center mb-6">
+            <div className="relative inline-flex justify-center mb-4">
               <div className="w-24 h-24 bg-gray-700 rounded-full flex items-center justify-center overflow-hidden">
                 {previewImage ? (
                   <img src={previewImage} alt="Preview" className="w-full h-full object-cover" />
@@ -574,14 +573,14 @@ const MyProfile = ({ user, onUpdateUser }) => {
           {/* Edit Form */}
           {editing ? (
             <form onSubmit={handleEditSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-400 mb-2">Full Name</label>
                   <input
                     type="text"
                     value={editForm.fullName}
                     onChange={(e) => setEditForm({...editForm, fullName: e.target.value})}
-                    className="w-full bg-gray-700 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-orange"
+                    className="w-full bg-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-orange"
                   />
                 </div>
                 <div>
@@ -590,7 +589,7 @@ const MyProfile = ({ user, onUpdateUser }) => {
                     type="email"
                     value={editForm.email}
                     onChange={(e) => setEditForm({...editForm, email: e.target.value})}
-                    className="w-full bg-gray-700 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-orange"
+                    className="w-full bg-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-orange"
                   />
                 </div>
                 <div>
@@ -599,21 +598,21 @@ const MyProfile = ({ user, onUpdateUser }) => {
                     type="tel"
                     value={editForm.phone}
                     onChange={(e) => setEditForm({...editForm, phone: e.target.value})}
-                    className="w-full bg-gray-700 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-orange"
+                    className="w-full bg-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-orange"
                   />
                 </div>
               </div>
-              <div className="flex gap-4">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   type="submit"
-                  className="bg-primary-orange text-white px-6 py-2 rounded-lg hover:bg-orange-600 transition-colors"
+                  className="w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
                 >
                   Save Changes
                 </button>
                 <button
                   type="button"
                   onClick={() => setEditing(false)}
-                  className="bg-gray-700 text-white px-6 py-2 rounded-lg hover:bg-gray-600 transition-colors"
+                  className="w-full sm:w-auto bg-gray-700 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
                 >
                   Cancel
                 </button>
@@ -621,17 +620,19 @@ const MyProfile = ({ user, onUpdateUser }) => {
             </form>
           ) : (
             <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <Mail size={20} className="text-gray-400" />
-                <span>{profileData.email}</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <Phone size={20} className="text-gray-400" />
-                <span>{profileData.phone}</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <Calendar size={20} className="text-gray-400" />
-                <span>Member since {profileData.memberSince}</span>
+              <div className="space-y-4">
+                <div className="flex items-center justify-center gap-3">
+                  <Mail size={20} className="text-gray-400" />
+                  <span className="text-gray-300">{profileData.email}</span>
+                </div>
+                <div className="flex items-center justify-center gap-3">
+                  <Phone size={20} className="text-gray-400" />
+                  <span className="text-gray-300">{profileData.phone}</span>
+                </div>
+                <div className="flex items-center justify-center gap-3">
+                  <Calendar size={20} className="text-gray-400" />
+                  <span className="text-gray-300">Member since {profileData.memberSince}</span>
+                </div>
               </div>
             </div>
           )}
@@ -759,65 +760,69 @@ const MyProfile = ({ user, onUpdateUser }) => {
         {/* Vehicle Management - Only show when KYC is verified */}
         {kycStatus === 'VERIFIED' ? (
           <div className="bg-gray-800 rounded-2xl p-8 mb-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold flex items-center gap-2">
-                <Zap size={20} className="text-orange-400" />
-                My Vehicles
-              </h3>
-              <button
-                onClick={() => setShowVehicleForm(!showVehicleForm)}
-                className="flex items-center gap-2 bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors"
-              >
-                <Plus size={16} />
-                Add Vehicle
-              </button>
+            {/* Header - Vertical Layout */}
+            <div className="text-center mb-6">
+              <div className="inline-flex items-center justify-center w-12 h-12 bg-orange-500/20 rounded-full mb-3">
+                <Zap size={24} className="text-orange-400" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">My Vehicles</h3>
+              <p className="text-gray-400 text-sm">Manage your vehicles for ride sharing</p>
             </div>
 
             {/* Add Vehicle Form */}
             {showVehicleForm && (
               <div className="bg-gray-700 rounded-lg p-4 mb-6">
                 <h4 className="text-lg font-semibold mb-4">Add New Vehicle</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div className="space-y-4">
                   <input
                     type="text"
                     placeholder="Bike Number (e.g., UP80AB1234)"
                     value={vehicleForm.bikeNumber}
                     onChange={(e) => setVehicleForm({...vehicleForm, bikeNumber: e.target.value})}
-                    className="bg-gray-600 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full bg-gray-600 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                   />
                   <input
                     type="text"
                     placeholder="Bike Name (e.g., Black Beast)"
                     value={vehicleForm.bikeName}
                     onChange={(e) => setVehicleForm({...vehicleForm, bikeName: e.target.value})}
-                    className="bg-gray-600 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full bg-gray-600 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                   />
+                  <select
+                    value={vehicleForm.vehicleType}
+                    onChange={(e) => setVehicleForm({...vehicleForm, vehicleType: e.target.value})}
+                    className="w-full bg-gray-600 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  >
+                    <option value="BIKE">Bike</option>
+                    <option value="SCOOTER">Scooter</option>
+                    <option value="SCOOTY">Scooty</option>
+                  </select>
                   <input
                     type="text"
                     placeholder="Bike Model (e.g., Splendor Plus)"
                     value={vehicleForm.bikeModel}
                     onChange={(e) => setVehicleForm({...vehicleForm, bikeModel: e.target.value})}
-                    className="bg-gray-600 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full bg-gray-600 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                   />
                   <input
                     type="text"
                     placeholder="Bike Company (e.g., Hero)"
                     value={vehicleForm.bikeCompany}
                     onChange={(e) => setVehicleForm({...vehicleForm, bikeCompany: e.target.value})}
-                    className="bg-gray-600 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full bg-gray-600 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
-                <div className="flex gap-4">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <button
                     onClick={handleAddVehicle}
                     disabled={vehicleLoading}
-                    className="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 disabled:opacity-50 transition-colors"
+                    className="w-full sm:w-auto bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold disabled:opacity-50 transition-colors"
                   >
                     {vehicleLoading ? 'Adding...' : 'Add Vehicle'}
                   </button>
                   <button
                     onClick={() => setShowVehicleForm(false)}
-                    className="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+                    className="w-full sm:w-auto bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
                   >
                     Cancel
                   </button>
@@ -838,9 +843,9 @@ const MyProfile = ({ user, onUpdateUser }) => {
                     <button
                       onClick={() => handleDeleteVehicle(vehicle.id)}
                       disabled={vehicleLoading}
-                      className="bg-red-500 text-white p-2 rounded-lg hover:bg-red-600 disabled:opacity-50 transition-colors"
+                      className="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
                     >
-                      <Trash2 size={16} />
+                      Deactivate
                     </button>
                   </div>
                 ))}
@@ -852,6 +857,17 @@ const MyProfile = ({ user, onUpdateUser }) => {
                 <p className="text-sm">Click "Add Vehicle" to get started</p>
               </div>
             )}
+
+            {/* Add Vehicle Button - Below Section */}
+            <div className="mt-6 pt-6 border-t border-gray-700">
+              <button
+                onClick={() => setShowVehicleForm(!showVehicleForm)}
+                className="w-full flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-3 rounded-lg font-semibold transition-colors"
+              >
+                <Plus size={16} />
+                {showVehicleForm ? 'Cancel' : 'Add Vehicle'}
+              </button>
+            </div>
           </div>
         ) : (
           <div className="bg-gray-800 rounded-2xl p-8 mb-6">
@@ -872,36 +888,48 @@ const MyProfile = ({ user, onUpdateUser }) => {
 
         {/* Change Password */}
         <div className="bg-gray-800 rounded-2xl p-8 mb-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-bold">Security</h3>
+          {/* Header - Vertical Layout */}
+          <div className="text-center mb-6">
+            <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-500/20 rounded-full mb-3">
+              <Lock size={24} className="text-blue-400" />
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">Security</h3>
+            <p className="text-gray-400 text-sm">Manage your account security settings</p>
+          </div>
+          
+          <div className="text-center mb-6">
+            <p className="text-gray-400">Last password change: Not available</p>
+          </div>
+          
+          {/* Change Password Button - Below Section */}
+          <div className="mt-6 pt-6 border-t border-gray-700">
             <button
               onClick={() => setShowPasswordModal(true)}
-              className="flex items-center gap-2 bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
+              className="w-full flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-3 rounded-lg font-semibold transition-colors"
             >
-              <Lock size={20} />
+              <Lock size={16} />
               Change Password
             </button>
           </div>
-          <p className="text-gray-400">Last password change: Not available</p>
         </div>
 
         {/* Riding Stats */}
         <div className="bg-gray-800 rounded-2xl p-8 mb-6">
           <h3 className="text-xl font-bold mb-6">Riding Statistics</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center">
-              <Star size={40} className="text-primary-orange mx-auto mb-2" />
-              <div className="text-2xl font-bold">{profileData.totalRidesPosted}</div>
+          <div className="space-y-4">
+            <div className="text-center bg-gray-700 rounded-lg p-4">
+              <Star size={40} className="text-primary-orange mx-auto mb-3" />
+              <div className="text-2xl font-bold text-white">{profileData.totalRidesPosted}</div>
               <div className="text-gray-400">Rides Posted</div>
             </div>
-            <div className="text-center">
-              <User size={40} className="text-primary-orange mx-auto mb-2" />
-              <div className="text-2xl font-bold">{profileData.totalRidesBooked}</div>
+            <div className="text-center bg-gray-700 rounded-lg p-4">
+              <User size={40} className="text-primary-orange mx-auto mb-3" />
+              <div className="text-2xl font-bold text-white">{profileData.totalRidesBooked}</div>
               <div className="text-gray-400">Rides Booked</div>
             </div>
-            <div className="text-center">
-              <Star size={40} className="text-primary-orange mx-auto mb-2" />
-              <div className="text-2xl font-bold">{profileData.averageRating.toFixed(1)}</div>
+            <div className="text-center bg-gray-700 rounded-lg p-4">
+              <Star size={40} className="text-primary-orange mx-auto mb-3" />
+              <div className="text-2xl font-bold text-white">{profileData.averageRating.toFixed(1)}</div>
               <div className="text-gray-400">Average Rating</div>
             </div>
           </div>

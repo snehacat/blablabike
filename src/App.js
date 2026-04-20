@@ -6,7 +6,6 @@ import Home from './pages/Home';
 import BrowseRides from './pages/BrowseRides';
 import RideDetail from './pages/RideDetail';
 import PostRide from './pages/PostRide';
-import Profile from './pages/Profile';
 import MyProfile from './pages/MyProfile';
 import KYCPage from './pages/KYCPage';
 import KYCSuccess from './pages/KYCSuccess';
@@ -144,7 +143,6 @@ const App = () => {
         <Route path="/browse" element={<BrowseRides user={user} onLoginClick={() => setShowLogin(true)} />} />
         <Route path="/rides/:id" element={<RideDetail user={user} onLoginClick={() => setShowLogin(true)} />} />
         <Route path="/post-ride" element={<PostRide user={user} onLoginClick={() => setShowLogin(true)} />} />
-        <Route path="/profile" element={<Profile user={user} onUpdate={handleUserUpdate} />} />
         <Route path="/my-profile" element={<MyProfile user={user} onUpdateUser={handleUserUpdate} />} />
         <Route path="/kyc" element={<KYCPage user={user} />} />
         <Route path="/kyc/success" element={<KYCSuccess />} />

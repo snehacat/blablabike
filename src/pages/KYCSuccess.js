@@ -6,8 +6,8 @@ const KYCSuccess = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-6 sm:p-10">
-      <div className="max-w-3xl mx-auto rounded-3xl border border-gray-800 bg-gray-950 p-8 shadow-2xl shadow-black/20">
+    <div className="min-h-screen bg-gray-900 text-white pt-20 sm:pt-24 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-3xl mx-auto rounded-3xl border border-gray-800 bg-gray-950 p-6 sm:p-8 shadow-2xl shadow-black/20">
         <div className="flex items-center gap-4 text-green-400 mb-6">
           <CheckCircle size={28} />
           <div>

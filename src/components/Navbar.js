@@ -27,7 +27,7 @@ const Navbar = ({ user, onLoginClick, onSignupClick, onLogout, onProfileClick })
   const isActive = (path) => location.pathname === path;
 
   return (
-    <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'glass-dark shadow-2xl' : 'bg-transparent'}`}>
+    <nav className={`fixed top-0 w-full z-[60] transition-all duration-300 ${scrolled ? 'glass-dark shadow-2xl' : 'bg-transparent'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
@@ -116,7 +116,7 @@ const Navbar = ({ user, onLoginClick, onSignupClick, onLogout, onProfileClick })
 
       {/* Mobile menu */}
       {isMenuOpen && (
-        <div className="md:hidden glass-dark border-t border-white border-opacity-10 px-4 py-4 space-y-1">
+        <div className="md:hidden glass-dark border-t border-white border-opacity-10 px-4 py-4 space-y-1 absolute top-16 left-0 right-0">
           {/* Public links - always visible */}
           {publicNavLinks.map(({ label, to }) => (
             <Link
