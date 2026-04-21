@@ -367,22 +367,22 @@ const KYCPage = ({ user }) => {
         {/* Top DigiLocker Button */}
         <div className="mb-8">
           <div className="bg-gray-800 rounded-lg p-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col space-y-4">
               <div>
                 <h3 className="text-lg font-semibold text-white">Quick Verification</h3>
                 <p className="text-sm text-gray-400">Start your DigiLocker verification instantly</p>
               </div>
-              <div className="flex gap-3">
+              <div className="flex flex-col space-y-3">
                 <button
                   onClick={checkDigilockerStatus}
-                  className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors text-sm"
+                  className="w-full bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors text-sm"
                 >
                   Check Status
                 </button>
                 <button
                   onClick={handleSubmit}
                   disabled={loading || digilockerStatus?.dlVerified}
-                  className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-6 py-3 rounded-lg font-medium hover:from-orange-600 hover:to-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+                  className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white px-6 py-3 rounded-lg font-medium hover:from-orange-600 hover:to-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
                 >
                   {loading && (
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
