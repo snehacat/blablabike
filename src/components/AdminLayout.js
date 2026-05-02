@@ -27,7 +27,8 @@ const AdminLayout = ({ children }) => {
     localStorage.removeItem('adminUser');
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    navigate('/');
+    // Force navigation to home page
+    window.location.href = '/';
   };
 
   const menuItems = [

@@ -38,7 +38,7 @@ const MyProfile = ({ user, onUpdateUser }) => {
 
   useEffect(() => {
     if (!user) {
-      navigate('/');
+      // Don't redirect immediately, show admin login option
       return;
     }
     setEditForm(user);
@@ -136,6 +136,45 @@ const MyProfile = ({ user, onUpdateUser }) => {
     { id: 'earnings', label: 'Earnings', icon: DollarSign },
     { id: 'complaints', label: 'Support', icon: AlertCircle }
   ];
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white pt-20 px-4 pb-12 flex items-center justify-center">
+        <div className="max-w-md w-full bg-gray-800 rounded-2xl p-8 border border-orange-500/20">
+          <div className="text-center mb-8">
+            <div className="w-20 h-20 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Shield size={40} className="text-white" />
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-2">Admin Access Required</h2>
+            <p className="text-gray-300">You need to log in to access the admin panel</p>
+          </div>
+          
+          <div className="space-y-4">
+            <button 
+              onClick={() => navigate('/')}
+              className="w-full py-3 px-4 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg font-medium hover:from-orange-600 hover:to-orange-700 transition-all flex items-center justify-center gap-2"
+            >
+              <Shield size={20} />
+              <span>Admin Login</span>
+            </button>
+            
+            <div className="text-center">
+              <p className="text-xs text-gray-400 mb-2">Demo Admin Credentials:</p>
+              <p className="text-xs text-gray-500">Phone: 9999999999</p>
+              <p className="text-xs text-gray-500">Password: Admin@123</p>
+            </div>
+            
+            <button 
+              onClick={() => navigate('/')}
+              className="w-full py-2 px-4 text-gray-400 hover:text-white text-sm transition-colors"
+            >
+              ← Back to Home
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white pt-20 px-4 pb-12">

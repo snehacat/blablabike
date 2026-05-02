@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Mail, Lock, Eye, EyeOff, User, AlertCircle, X, Zap, Loader } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, User, AlertCircle, X, Zap, Loader, Shield } from 'lucide-react';
 import authAPI from './authAPI';
 
 const LoginModal = ({ onClose, onSuccess, onSwitchToSignup }) => {
@@ -472,7 +472,7 @@ const LoginModal = ({ onClose, onSuccess, onSwitchToSignup }) => {
 
           {/* Footer */}
           <div className="mt-6 pt-6 border-t border-gray-700 text-center">
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-gray-400 mb-3">
               Don't have an account?{' '}
               <button 
                 onClick={onSwitchToSignup} 
@@ -481,6 +481,10 @@ const LoginModal = ({ onClose, onSuccess, onSwitchToSignup }) => {
                 Sign up free
               </button>
             </p>
+            <div className="flex items-center justify-center gap-2 text-xs text-gray-500">
+              <Shield size={12} />
+              <span>Admin Access: Use Phone 9999999999, Password Admin@123</span>
+            </div>
           </div>
         </div>
       </div>
