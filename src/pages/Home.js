@@ -88,14 +88,13 @@ const HeroSection = ({ bgIndex, setBgIndex, stats, user, navigate, onSignupClick
           </div>
 
           <h1 className="text-5xl md:text-7xl font-black leading-tight mb-6 fade-up-2">
-            <span className="text-white">Your Complete</span><br />
-            <span className="gradient-text">Bike Pooling</span><br />
-            <span className="text-white">Profile Hub</span>
+            <span className="text-white">Got a spare seat?</span><br />
+            <span className="gradient-text">Share your ride.</span><br />
+            <span className="text-white">Split the cost</span>
           </h1>
 
           <p className="text-lg text-gray-300 mb-8 leading-relaxed max-w-lg fade-up-3">
-            Manage your profile, verification, ride history, earnings, and complaints all in one place.
-            Complete KYC verification to unlock all features.
+            Post your daily 2-wheeler commute and let someone goingthe same way join you.Save fuel.Split the cost.
           </p>
 
           <div className="grid grid-cols-3 gap-3 mb-8 fade-up-3">
@@ -116,11 +115,6 @@ const HeroSection = ({ bgIndex, setBgIndex, stats, user, navigate, onSignupClick
             <button onClick={() => user ? navigate('/profile') : onSignupClick()} className="btn-primary px-7 py-3.5 flex items-center justify-center gap-2">
               <User size={18} /><span>{user ? 'My Profile' : 'Get Started'}</span>
             </button>
-            {user && (
-              <button onClick={() => navigate('/profile')} className="btn-outline px-7 py-3.5 flex items-center justify-center gap-2">
-                <Shield size={18} /><span>Complete KYC</span>
-              </button>
-            )}
           </div>
         </div>
 
