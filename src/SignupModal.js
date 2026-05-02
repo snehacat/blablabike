@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { X, Loader, Eye, EyeOff, CheckCircle, Zap, Phone } from 'lucide-react';
 import authAPI from './authAPI';
 
@@ -19,6 +19,19 @@ const SignupModal = ({ onClose, onSuccess, onSwitchToLogin }) => {
     return phone.replace(/\D/g, '').slice(-10);
   };
 
+  const resetModal = useCallback(() => {
+    setStep(1);
+    setForm({ fullName: '', email: '', phone: '', password: '' });
+    setOtp(Array.from({ length: OTP_LENGTH }, () => ''));
+    setLoading(false);
+    setOtpLoading(false);
+    setError('');
+    setSuccess('');
+    if (typeof onClose === 'function') {
+      onClose();
+    }
+  }, [OTP_LENGTH, onClose]);
+
   // Handle overlay click
   const handleOverlayClick = (e) => {
     if (e.target === e.currentTarget) {
@@ -36,7 +49,7 @@ const SignupModal = ({ onClose, onSuccess, onSwitchToLogin }) => {
 
     document.addEventListener('keydown', handleEscKey);
     return () => document.removeEventListener('keydown', handleEscKey);
-  }, []);
+  }, [resetModal]);
 
   const handleChange = (e) => { setForm({ ...form, [e.target.name]: e.target.value }); setError(''); setSuccess(''); };
 
@@ -53,19 +66,7 @@ const SignupModal = ({ onClose, onSuccess, onSwitchToLogin }) => {
     if (e.key === 'Backspace' && !otp[index] && index > 0) otpRefs[index - 1].current?.focus();
   };
 
-  const resetModal = () => {
-    setStep(1);
-    setForm({ fullName: '', email: '', phone: '', password: '' });
-    setOtp(Array.from({ length: OTP_LENGTH }, () => ''));
-    setLoading(false);
-    setOtpLoading(false);
-    setError('');
-    setSuccess('');
-    if (typeof onClose === 'function') {
-      onClose();
-    }
-  };
-
+  
   const handleRegister = async (e) => {
     e.preventDefault();
     const { fullName, email, phone, password } = form;

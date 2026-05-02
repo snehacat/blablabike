@@ -41,27 +41,70 @@ const AdminLayout = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-gray-900">
-      {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-black border-r border-orange-500/20 transform ${
-        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      } transition-transform duration-300 ease-in-out lg:translate-x-0`}>
-        <div className="flex items-center justify-between p-6 border-b border-orange-500/20">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
-              <Activity size={24} className="text-white" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-white">Admin Panel</h2>
-              <p className="text-sm text-orange-400">BikePooling</p>
+      {/* Fixed Header */}
+      <header className="fixed top-0 left-0 right-0 z-40 bg-black border-b border-orange-500/20">
+        <div className="flex items-center justify-between px-6 py-4">
+          {/* Left: Menu Button and Branding */}
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="lg:hidden p-2 hover:bg-gray-800 rounded-lg text-orange-400"
+            >
+              <Menu size={20} />
+            </button>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
+                <Activity size={24} className="text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-white">BikePooling</h1>
+                <p className="text-sm text-orange-400">Admin Panel</p>
+              </div>
             </div>
           </div>
-          <button 
-            onClick={() => setSidebarOpen(false)} 
-            className="lg:hidden p-2 hover:bg-gray-800 rounded-lg text-orange-400"
-          >
-            <X size={20} />
-          </button>
+          
+          {/* Right: User Info and Logout */}
+          <div className="flex items-center gap-4">
+            <div className="hidden sm:flex items-center gap-3 px-3 py-2 bg-gray-800 rounded-lg">
+              <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-sm">
+                  {adminUser?.fullName?.charAt(0) || 'A'}
+                </span>
+              </div>
+              <div className="hidden md:block">
+                <p className="text-sm font-medium text-white truncate">
+                  {adminUser?.fullName || 'Admin'}
+                </p>
+                <p className="text-xs text-orange-400 truncate">
+                  {adminUser?.email || 'admin@bikepooling.com'}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+              title="Logout"
+            >
+              <LogOut size={20} />
+            </button>
+          </div>
         </div>
+      </header>
+
+      {/* Sidebar */}
+      <div className={`fixed top-16 left-0 z-50 w-64 bg-black border-r border-orange-500/20 h-[calc(100vh-4rem)] transform ${
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+      } transition-transform duration-300 ease-in-out lg:translate-x-0`}>
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-bold text-white">Menu</h2>
+            <button 
+              onClick={() => setSidebarOpen(false)} 
+              className="lg:hidden p-2 hover:bg-gray-800 rounded-lg text-orange-400"
+            >
+              <X size={20} />
+            </button>
+          </div>
         
         <nav className="p-4">
           {menuItems.map((item, index) => {
@@ -85,43 +128,11 @@ const AdminLayout = ({ children }) => {
             );
           })}
         </nav>
-        
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-orange-500/20">
-          <div className="flex items-center gap-3 mb-4 p-3 bg-gray-800 rounded-lg">
-            <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold">
-                {adminUser?.fullName?.charAt(0) || 'A'}
-              </span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">
-                {adminUser?.fullName || 'Admin'}
-              </p>
-              <p className="text-xs text-orange-400 truncate">
-                {adminUser?.email || 'admin@bikepooling.com'}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-          >
-            <LogOut size={20} />
-            <span className="font-medium">Logout</span>
-          </button>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="lg:ml-64">
-        {/* Mobile Menu Button */}
-        <button
-          onClick={() => setSidebarOpen(true)}
-          className="lg:hidden fixed top-4 left-4 z-40 p-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-orange-400 border border-orange-500/20"
-        >
-          <Menu size={20} />
-        </button>
-
+      <div className="lg:ml-64 pt-16">
         {/* Page Content */}
         {children}
       </div>

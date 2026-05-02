@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Users, UserCheck, Bike, DollarSign, TrendingUp, TrendingDown,
+  Users, UserCheck, Bike, DollarSign, 
   BarChart3, Activity, AlertCircle
 } from 'lucide-react';
 import AdminLayout from '../../components/AdminLayout';
@@ -72,7 +72,7 @@ const AdminDashboard = () => {
           <div className={`flex items-center gap-1 text-sm font-medium ${
             changeType === 'increase' ? 'text-green-400' : 'text-red-400'
           }`}>
-            {changeType === 'increase' ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+            <span className="text-lg">{changeType === 'increase' ? '↑' : '↓'}</span>
             {change}
           </div>
         )}
@@ -97,24 +97,22 @@ const AdminDashboard = () => {
 
   return (
     <AdminLayout>
-      {/* Header */}
-      <header className="bg-gray-800 border-b border-orange-500/20">
-        <div className="px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-              <p className="text-orange-300">Welcome back, {adminUser?.fullName || 'Admin'}</p>
-            </div>
-            <div className="text-right">
-              <p className="text-sm text-orange-400">Today's Date</p>
-              <p className="text-sm font-medium text-white">{new Date().toLocaleDateString()}</p>
+      {/* Dashboard Content */}
+      <main className="p-6">
+          {/* Welcome Section */}
+          <div className="bg-gray-800 border border-orange-500/20 rounded-xl p-6 mb-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-white mb-2">Dashboard</h1>
+                <p className="text-orange-300">Welcome back, {adminUser?.fullName || 'Admin'}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-orange-400">Today's Date</p>
+                <p className="text-sm font-medium text-white">{new Date().toLocaleDateString()}</p>
+              </div>
             </div>
           </div>
-        </div>
-      </header>
 
-      {/* Dashboard Content */}
-      <main className="p-4 sm:p-6 lg:p-8">
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <StatCard icon={Users} title="Total Users" value={stats.totalUsers} change="+12%" changeType="increase" color="bg-orange-500" />

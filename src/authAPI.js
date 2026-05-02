@@ -270,42 +270,6 @@ const authAPI = {
     }
   },
 
-  deleteVehicle: async (vehicleId) => {
-    try {
-      const res = await api.delete(`/vehicles/${vehicleId}`);
-      return res.data;
-    } catch (err) {
-      throw err;
-    }
-  },
-
-  getMyVehicles: async () => {
-    try {
-      const res = await api.get('/vehicles/my');
-      return res.data;
-    } catch (err) {
-      throw err;
-    }
-  },
-
-  deactivateVehicle: async (vehicleId) => {
-    try {
-      const res = await api.patch(`/vehicles/${vehicleId}/deactivate`);
-      return res.data;
-    } catch (err) {
-      throw err;
-    }
-  },
-
-  activateVehicle: async (vehicleId) => {
-    try {
-      const res = await api.patch(`/vehicles/${vehicleId}/activate`);
-      return res.data;
-    } catch (err) {
-      throw err;
-    }
-  },
-
   // Rides APIs
   getRides: async () => {
     try {

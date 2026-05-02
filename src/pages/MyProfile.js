@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Shield, AlertCircle, Edit2, X, Save, Camera, Mail, Phone, Calendar, MessageSquare, Send, Smartphone, ExternalLink, Star, Bike, DollarSign, FileText, TrendingUp, Clock, MapPin } from 'lucide-react';
 import authAPI from '../authAPI';
@@ -20,17 +20,7 @@ const MyProfile = ({ user, onUpdateUser }) => {
   const [userEarnings, setUserEarnings] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (!user) {
-      navigate('/');
-      return;
-    }
-    setEditForm(user);
-    fetchKycStatus();
-    fetchUserData();
-  }, [user, navigate]);
-
-  const fetchUserData = async () => {
+  const fetchUserData = useCallback(async () => {
     setLoading(true);
     try {
       await Promise.all([
@@ -44,7 +34,17 @@ const MyProfile = ({ user, onUpdateUser }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (!user) {
+      navigate('/');
+      return;
+    }
+    setEditForm(user);
+    fetchKycStatus();
+    fetchUserData();
+  }, [user, navigate, fetchUserData]);
 
   const fetchUserPosts = async () => {
     try {

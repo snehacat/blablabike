@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Users, Search, Filter, Edit2, Trash2, Eye, Ban, CheckCircle, XCircle,
-  Download, RefreshCw, TrendingUp, Shield, AlertCircle
+  Download, RefreshCw, Shield, AlertCircle
 } from 'lucide-react';
 import AdminLayout from '../../components/AdminLayout';
 
@@ -106,12 +106,13 @@ const UserManagement = () => {
 
   return (
     <AdminLayout>
-      {/* Header */}
-      <header className="bg-gray-800 border-b border-orange-500/20">
-        <div className="px-4 sm:px-6 lg:px-8 py-4">
+      {/* Content */}
+      <main className="p-6">
+        {/* Page Header */}
+        <div className="bg-gray-800 border border-orange-500/20 rounded-xl p-6 mb-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-white">User Management</h1>
+              <h1 className="text-2xl font-bold text-white mb-2">User Management</h1>
               <p className="text-orange-300">Manage all users and drivers</p>
             </div>
             <div className="flex items-center gap-3">
@@ -126,9 +127,6 @@ const UserManagement = () => {
             </div>
           </div>
         </div>
-      </header>
-
-      <main className="p-4 sm:p-6 lg:p-8">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-gray-800 border border-orange-500/20 rounded-xl p-6">
@@ -137,7 +135,7 @@ const UserManagement = () => {
                 <Users size={24} className="text-orange-400" />
               </div>
               <div className="flex items-center gap-1 text-green-400 text-sm">
-                <TrendingUp size={16} />
+                <span className="text-lg">↑</span>
                 +12%
               </div>
             </div>
@@ -151,7 +149,7 @@ const UserManagement = () => {
                 <CheckCircle size={24} className="text-green-400" />
               </div>
               <div className="flex items-center gap-1 text-green-400 text-sm">
-                <TrendingUp size={16} />
+                <span className="text-lg">↑</span>
                 +8%
               </div>
             </div>

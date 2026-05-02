@@ -55,11 +55,12 @@ const RideManagement = () => {
 
   return (
     <AdminLayout>
-      <header className="bg-gray-800 border-b border-orange-500/20">
-        <div className="px-4 sm:px-6 lg:px-8 py-4">
+      <main className="p-6">
+        {/* Page Header */}
+        <div className="bg-gray-800 border border-orange-500/20 rounded-xl p-6 mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-white">Ride Management</h1>
+              <h1 className="text-2xl font-bold text-white mb-2">Ride Management</h1>
               <p className="text-orange-300">Monitor and manage all ride activities</p>
             </div>
             <div className="flex items-center gap-3">
@@ -73,9 +74,6 @@ const RideManagement = () => {
             </div>
           </div>
         </div>
-      </header>
-
-      <main className="p-4 sm:p-6 lg:p-8">
         <div className="bg-gray-800 rounded-xl shadow-lg p-6 border border-orange-500/20">
           <div className="flex flex-col lg:flex-row gap-4">
             <div className="flex-1">

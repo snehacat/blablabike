@@ -291,22 +291,15 @@ const CTASection = ({ user, navigate, onSignupClick }) => (
             </button>
           </>
         ) : (
-          <>
+          <div className="flex justify-center">
             <button 
               onClick={onSignupClick}
-              className="btn-primary px-8 py-4 flex items-center justify-center gap-2"
+              className="btn-primary px-8 py-4 flex items-center justify-center gap-2 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl"
             >
               <User size={20} />
-              <span>Sign Up Now</span>
+              <span>Sign Up Free</span>
             </button>
-            <button 
-              onClick={() => navigate('/profile')}
-              className="btn-outline px-8 py-4 flex items-center justify-center gap-2"
-            >
-              <CheckCircle size={20} />
-              <span>Learn More</span>
-            </button>
-          </>
+          </div>
         )}
       </div>
       
