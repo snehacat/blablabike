@@ -58,20 +58,9 @@ const RideManagement = () => {
       <main className="p-6">
         {/* Page Header */}
         <div className="bg-gray-800 border border-orange-500/20 rounded-xl p-6 mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-white mb-2">Ride Management</h1>
-              <p className="text-orange-300">Monitor and manage all ride activities</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={loadRides}
-                className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors"
-              >
-                <RefreshCw size={16} />
-                Refresh
-              </button>
-            </div>
+          <div>
+            <h1 className="text-2xl font-bold text-white mb-2">Ride Management</h1>
+            <p className="text-orange-300">Monitor and manage all ride activities</p>
           </div>
         </div>
         <div className="bg-gray-800 rounded-xl shadow-lg p-6 border border-orange-500/20">
