@@ -45,6 +45,20 @@ const mockUsers = [
   }
 ];
 
+const mockVehicles = [
+  {
+    id: 1,
+    userId: 1,
+    bikeNumber: 'MH01AB1234',
+    bikeName: 'Activa 6G',
+    bikeModel: 'Activa 6G',
+    bikeCompany: 'Honda',
+    vehicleType: 'BIKE',
+    status: 'ACTIVE',
+    createdAt: new Date().toISOString()
+  }
+];
+
 const mockRides = [
   {
     id: 1,
@@ -195,6 +209,64 @@ app.post('/api/rides', (req, res) => {
   };
   mockRides.push(newRide);
   res.status(201).json(newRide);
+});
+
+// Vehicle endpoints
+app.get('/api/vehicles', (req, res) => {
+  res.json({
+    success: true,
+    data: mockVehicles
+  });
+});
+
+app.get('/api/vehicles/my', (req, res) => {
+  // Mock user ID 1 for demo
+  const userVehicles = mockVehicles.filter(v => v.userId === 1);
+  res.json({
+    success: true,
+    data: userVehicles
+  });
+});
+
+app.post('/api/vehicles', (req, res) => {
+  const { bikeNumber, bikeName, bikeModel, bikeCompany, vehicleType } = req.body;
+  
+  // Validate required fields
+  if (!bikeNumber || !bikeName || !bikeModel || !bikeCompany) {
+    return res.status(400).json({
+      success: false,
+      message: 'All vehicle fields are required'
+    });
+  }
+  
+  // Check if vehicle number already exists
+  const existingVehicle = mockVehicles.find(v => v.bikeNumber === bikeNumber);
+  if (existingVehicle) {
+    return res.status(400).json({
+      success: false,
+      message: 'Vehicle with this number already exists'
+    });
+  }
+  
+  const newVehicle = {
+    id: mockVehicles.length + 1,
+    userId: 1, // Mock user ID
+    bikeNumber,
+    bikeName,
+    bikeModel,
+    bikeCompany,
+    vehicleType: vehicleType || 'BIKE',
+    status: 'ACTIVE',
+    createdAt: new Date().toISOString()
+  };
+  
+  mockVehicles.push(newVehicle);
+  
+  res.status(201).json({
+    success: true,
+    data: newVehicle,
+    message: 'Vehicle added successfully'
+  });
 });
 
 // Book a ride

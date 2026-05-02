@@ -2,7 +2,6 @@ import React, { useState, useRef } from 'react';
 import { Camera, Upload, X, User, CheckCircle } from 'lucide-react';
 
 const ProfileSection = ({ user, onUpdateProfile, onClose }) => {
-  console.log('ProfileSection rendered with user:', user);
   const [isEditing, setIsEditing] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -42,31 +41,22 @@ const ProfileSection = ({ user, onUpdateProfile, onClose }) => {
     try {
       // Check if we're in production and have a real backend
       const isProduction = process.env.NODE_ENV === 'production';
-      console.log('Production mode:', isProduction);
-      console.log('API Base URL:', process.env.REACT_APP_API_BASE_URL);
-      console.log('User token:', localStorage.getItem('token') ? 'exists' : 'missing');
       
       if (isProduction) {
         // Real backend upload for production (with fallback)
         try {
-          console.log('Starting production upload...');
           
           const response = await fetch(previewImage);
-          console.log('Fetch response status:', response.status);
           
           const blob = await response.blob();
-          console.log('Blob created, size:', blob.size);
           
           const file = new File([blob], 'profile.jpg', { type: 'image/jpeg' });
-          console.log('File created:', file.name, file.type, file.size);
 
           // Create FormData for file upload
           const formData = new FormData();
           formData.append('profilePicture', file);
-          console.log('FormData created with file:', file.name);
 
           const uploadUrl = `${process.env.REACT_APP_API_BASE_URL}/user/profile-picture`;
-          console.log('Upload URL:', uploadUrl);
 
           // Upload to backend
           const uploadResponse = await fetch(uploadUrl, {
@@ -78,12 +68,9 @@ const ProfileSection = ({ user, onUpdateProfile, onClose }) => {
             body: formData
           });
 
-          console.log('Upload response status:', uploadResponse.status);
-          console.log('Upload response headers:', [...uploadResponse.headers.entries()]);
 
           if (uploadResponse.ok) {
             const result = await uploadResponse.json();
-            console.log('Upload success result:', result);
             
             setSuccessMessage('Profile picture updated successfully!');
             
@@ -92,7 +79,6 @@ const ProfileSection = ({ user, onUpdateProfile, onClose }) => {
               ...user,
               avatar: result.profilePictureUrl || previewImage
             };
-            console.log('ProfileSection - Updating user with avatar:', updatedUser.avatar);
             onUpdateProfile(updatedUser);
 
             // Reset after 2 seconds
@@ -103,10 +89,8 @@ const ProfileSection = ({ user, onUpdateProfile, onClose }) => {
             }, 2000);
           } else {
             const errorText = await uploadResponse.text();
-            console.error('Upload failed with response:', errorText);
             
             // Backend endpoint doesn't exist - use fallback
-            console.warn('Backend endpoint not available, using fallback');
             const updatedUser = {
               ...user,
               avatar: previewImage
@@ -121,8 +105,6 @@ const ProfileSection = ({ user, onUpdateProfile, onClose }) => {
             }, 2000);
           }
         } catch (error) {
-          console.error('Upload error:', error);
-          console.error('Error details:', error.message, error.stack);
           
           // Fallback: still update with preview image
           const updatedUser = {

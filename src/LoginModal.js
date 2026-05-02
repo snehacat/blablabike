@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { X, Loader, Eye, EyeOff, Zap } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Mail, Lock, Eye, EyeOff, User, AlertCircle, X, Zap, Loader } from 'lucide-react';
 import authAPI from './authAPI';
 
 const LoginModal = ({ onClose, onSuccess, onSwitchToSignup }) => {
@@ -15,12 +15,30 @@ const LoginModal = ({ onClose, onSuccess, onSwitchToSignup }) => {
 
   const OTP_LENGTH = 6;
   const [otp, setOtp] = useState(Array.from({ length: OTP_LENGTH }, () => ''));
-
   const otpRefs = [useRef(), useRef(), useRef(), useRef(), useRef(), useRef()];
 
   const cleanPhone = (phone) => {
-  return phone.replace(/\D/g, '').slice(-10);
-};
+    return phone.replace(/\D/g, '').slice(-10);
+  };
+
+  // Handle overlay click
+  const handleOverlayClick = (e) => {
+    if (e.target === e.currentTarget) {
+      resetModal();
+    }
+  };
+
+  // Handle ESC key
+  useEffect(() => {
+    const handleEscKey = (e) => {
+      if (e.key === 'Escape') {
+        resetModal();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscKey);
+    return () => document.removeEventListener('keydown', handleEscKey);
+  }, []);
 
   const resetModal = () => {
     setForm({ phone: '', password: '' });
@@ -83,10 +101,6 @@ const LoginModal = ({ onClose, onSuccess, onSwitchToSignup }) => {
   const handleSendOtp = async () => {
     const phone = cleanPhone(form.phone);
 
-    console.log("ORIGINAL INPUT:", form.phone);
-    console.log("FINAL PHONE SENT:", phone);
-    console.log("PHONE LENGTH:", phone.length);
-
     // Strict phone validation for OTP login
     if (phone.length !== 10) {
       setError('Please enter a valid 10-digit phone number');
@@ -107,10 +121,6 @@ const LoginModal = ({ onClose, onSuccess, onSwitchToSignup }) => {
     try {
       const resp = await authAPI.loginSendOtp(phone);
 
-      console.log("SEND OTP RESPONSE:", resp);
-      console.log("RESPONSE TYPE:", typeof resp);
-      console.log("RESPONSE KEYS:", resp ? Object.keys(resp) : 'null');
-
       if (resp) {
         setOtpSent(true);
         setSuccess('OTP sent!');
@@ -119,10 +129,6 @@ const LoginModal = ({ onClose, onSuccess, onSwitchToSignup }) => {
         setError('Failed to send OTP');
       }
     } catch (err) {
-      console.log("FULL ERROR OBJECT:", err);
-      console.log("ERROR RESPONSE:", err?.response?.data);
-      console.log("ERROR STATUS:", err?.response?.status);
-      console.log("ERROR MESSAGE:", err?.message);
       setError(err?.response?.data?.message || err?.message || 'Backend validation failed');
     } finally {
       setOtpLoading(false);
@@ -136,7 +142,6 @@ const LoginModal = ({ onClose, onSuccess, onSwitchToSignup }) => {
     const phone = cleanPhone(form.phone);
     const otpStr = otp.join('');
 
-    console.log("VERIFY PAYLOAD:", { phone, otp: otpStr });
 
     if (phone.length !== 10) {
       setError('Invalid phone number');
@@ -153,13 +158,23 @@ const LoginModal = ({ onClose, onSuccess, onSwitchToSignup }) => {
     try {
       const resp = await authAPI.loginVerifyOtp({ phone: phone, otp: otpStr });
 
-      console.log("VERIFY RESPONSE:", resp);
 
       if (resp?.success && resp?.data?.token) {
         const authData = resp.data;
 
         localStorage.setItem('token', authData.token);
         localStorage.setItem('user', JSON.stringify(authData));
+
+        // Check if user is admin and redirect accordingly
+        if (authData.role === 'ADMIN') {
+          localStorage.setItem('adminToken', authData.token);
+          localStorage.setItem('adminUser', JSON.stringify(authData));
+          setSuccess('Admin login successful!');
+          setTimeout(() => {
+            window.location.href = '/admin/dashboard';
+          }, 1000);
+          return;
+        }
 
         setSuccess('Login successful!');
 
@@ -169,7 +184,6 @@ const LoginModal = ({ onClose, onSuccess, onSwitchToSignup }) => {
 
       setError(resp?.message || 'Invalid OTP');
     } catch (err) {
-      console.log("VERIFY ERROR:", err?.response?.data);
       setError(err?.response?.data?.message || 'Validation failed');
     } finally {
       setLoading(false);
@@ -187,6 +201,29 @@ const LoginModal = ({ onClose, onSuccess, onSwitchToSignup }) => {
       return;
     }
 
+    // DEMO ADMIN MODE - Frontend only (for testing)
+    if (phone === '9999999999' && form.password === 'Admin@123') {
+      const demoAdminData = {
+        id: 999,
+        fullName: 'Demo Admin',
+        email: 'admin@bikepooling.com',
+        phone: '9999999999',
+        role: 'ADMIN',
+        token: 'demo-admin-token-' + Date.now()
+      };
+
+      localStorage.setItem('token', demoAdminData.token);
+      localStorage.setItem('adminToken', demoAdminData.token);
+      localStorage.setItem('user', JSON.stringify(demoAdminData));
+      localStorage.setItem('adminUser', JSON.stringify(demoAdminData));
+
+      setSuccess('Demo Admin login successful!');
+      setTimeout(() => {
+        window.location.href = '/admin/dashboard';
+      }, 1000);
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -200,6 +237,17 @@ const LoginModal = ({ onClose, onSuccess, onSwitchToSignup }) => {
 
         localStorage.setItem('token', authData.token);
         localStorage.setItem('user', JSON.stringify(authData));
+
+        // Check if user is admin and redirect accordingly
+        if (authData.role === 'ADMIN') {
+          localStorage.setItem('adminToken', authData.token);
+          localStorage.setItem('adminUser', JSON.stringify(authData));
+          setSuccess('Admin login successful!');
+          setTimeout(() => {
+            window.location.href = '/admin/dashboard';
+          }, 1000);
+          return;
+        }
 
         setSuccess('Login successful!');
         setTimeout(() => onSuccess(authData), 1000);
@@ -215,16 +263,43 @@ const LoginModal = ({ onClose, onSuccess, onSwitchToSignup }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 lg:p-8"
-      style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)' }}>
+    <div 
+      className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 lg:p-8"
+      style={{ 
+        background: 'rgba(0,0,0,0.95)', 
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)', // Safari mobile support
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100vw',
+        height: '100vh',
+        touchAction: 'none',
+        overscrollBehavior: 'contain'
+      }}
+      onClick={handleOverlayClick}
+    >
 
-      <div className="w-full max-w-md sm:max-w-lg lg:max-w-xl rounded-2xl overflow-hidden bg-[#12121a] border border-gray-700 shadow-2xl relative">
+      <div 
+        className="w-full max-w-md sm:max-w-lg lg:max-w-xl rounded-2xl overflow-hidden bg-[#12121a] border border-gray-700 shadow-2xl relative transform transition-all scale-100"
+        style={{
+          position: 'relative',
+          maxHeight: '90vh',
+          overflowY: 'auto',
+          touchAction: 'pan-y',
+          WebkitOverflowScrolling: 'touch',
+          margin: '0 auto'
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
         
         {/* Header */}
         <div className="relative p-6 sm:p-8 border-b border-gray-700">
           <button 
             onClick={resetModal} 
-            className="absolute right-4 top-4 text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-800"
+            className="absolute right-6 top-6 text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-800 z-10"
           >
             <X size={20} />
           </button>

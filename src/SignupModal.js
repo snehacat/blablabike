@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { X, Loader, Eye, EyeOff, CheckCircle, Zap, Phone } from 'lucide-react';
 import authAPI from './authAPI';
 
@@ -17,7 +17,27 @@ const SignupModal = ({ onClose, onSuccess, onSwitchToLogin }) => {
   const otpRefs = [useRef(), useRef(), useRef(), useRef(), useRef(), useRef()];
   const cleanPhone = (phone) => {
     return phone.replace(/\D/g, '').slice(-10);
-  };  
+  };
+
+  // Handle overlay click
+  const handleOverlayClick = (e) => {
+    if (e.target === e.currentTarget) {
+      resetModal();
+    }
+  };
+
+  // Handle ESC key
+  useEffect(() => {
+    const handleEscKey = (e) => {
+      if (e.key === 'Escape') {
+        resetModal();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscKey);
+    return () => document.removeEventListener('keydown', handleEscKey);
+  }, []);
+
   const handleChange = (e) => { setForm({ ...form, [e.target.name]: e.target.value }); setError(''); setSuccess(''); };
 
   const handleOtpChange = (index, value) => {
@@ -56,8 +76,7 @@ const SignupModal = ({ onClose, onSuccess, onSwitchToLogin }) => {
     setLoading(true);
     try {
       const resp = await authAPI.register({ fullName, email, phone: cleanedPhone, password });
-      console.log('Registration response:', resp); // Debug log
-      if (!resp?.success) {
+            if (!resp?.success) {
         setError(resp?.message || 'Registration failed. Try again.');
         setLoading(false);
         return;
@@ -129,13 +148,34 @@ const SignupModal = ({ onClose, onSuccess, onSwitchToLogin }) => {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center px-4 overflow-y-auto py-4"
-      style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)' }}
-      onClick={resetModal}
+      className="fixed inset-0 z-[99999] flex items-center justify-center px-4 overflow-y-auto py-4"
+      style={{ 
+        background: 'rgba(0,0,0,0.95)', 
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)', // Safari mobile support
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100vw',
+        height: '100vh',
+        touchAction: 'none',
+        overscrollBehavior: 'contain'
+      }}
+      onClick={handleOverlayClick}
     >
       <div
         className="relative w-full max-w-md rounded-2xl overflow-hidden"
-        style={modalStyle}
+        style={{
+          ...modalStyle,
+          position: 'relative',
+          maxHeight: '90vh',
+          overflowY: 'auto',
+          touchAction: 'pan-y',
+          WebkitOverflowScrolling: 'touch',
+          margin: '0 auto'
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="h-1 w-full" style={{ background: 'linear-gradient(90deg, #FF7000, #ff9a3c)' }} />

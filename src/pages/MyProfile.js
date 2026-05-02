@@ -1,1014 +1,570 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Mail, Phone, Calendar, Shield, Star, Edit2, Camera, Lock, X, ArrowRight, Zap, Plus, Trash2 } from 'lucide-react';
-import getApiConfig from '../config/api';
+import { User, Shield, AlertCircle, Edit2, X, Save, Camera, Mail, Phone, Calendar, MessageSquare, Send, Smartphone, ExternalLink, Star, Bike, DollarSign, FileText, TrendingUp, Clock, MapPin } from 'lucide-react';
 import authAPI from '../authAPI';
 
-// Fixed Car import issue - Updated for 2-wheeler app
 const MyProfile = ({ user, onUpdateUser }) => {
   const navigate = useNavigate();
-  const [profileData, setProfileData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [activeTab, setActiveTab] = useState('profile');
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({});
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [passwordForm, setPasswordForm] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
-  });
-  const [avatarFile, setAvatarFile] = useState(null);
-  const [previewImage, setPreviewImage] = useState(null);
-  const fileInputRef = useRef(null);
-
-  // Vehicle management state
-  const [vehicles, setVehicles] = useState([]);
-  const [vehicleLoading, setVehicleLoading] = useState(false);
-  const [showVehicleForm, setShowVehicleForm] = useState(false);
-  const [vehicleForm, setVehicleForm] = useState({
-    bikeNumber: '',
-    bikeName: '',
-    bikeModel: '',
-    bikeCompany: '',
-    vehicleType: 'BIKE'
-  });
-
+  const [kycStatus, setKycStatus] = useState('PENDING');
+  const [showComplaintForm, setShowComplaintForm] = useState(false);
+  const [complaintForm, setComplaintForm] = useState({ title: '', description: '' });
+  const [userComplaints, setUserComplaints] = useState([]);
   
+  // New sections state
+  const [userPosts, setUserPosts] = useState([]);
+  const [userRatings, setUserRatings] = useState([]);
+  const [userRides, setUserRides] = useState([]);
+  const [userEarnings, setUserEarnings] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-
-  // Vehicle management functions
-  const fetchVehicles = async () => {
-    try {
-      setVehicleLoading(true);
-      console.log('Fetching vehicles...');
-      console.log('API URL: https://bike-cytc.onrender.com/api/vehicles/my');
-      
-      const response = await authAPI.getMyVehicles();
-      console.log('Vehicles response:', response);
-      
-      if (response && response.success) {
-        const vehicles = response.data || [];
-        console.log('Vehicles data:', vehicles);
-        setVehicles(vehicles);
-      }
-    } catch (err) {
-      console.error('Failed to fetch vehicles:', err);
-      setError('Failed to fetch vehicles');
-    } finally {
-      setVehicleLoading(false);
-    }
-  };
-
-  const handleAddVehicle = async () => {
-    if (!vehicleForm.bikeNumber || !vehicleForm.bikeName) {
-      setError('Please fill in bike number and name');
-      return;
-    }
-
-    try {
-      setVehicleLoading(true);
-      console.log('Adding vehicle...');
-      console.log('API URL: https://bike-cytc.onrender.com/api/vehicles');
-      console.log('Vehicle data:', vehicleForm);
-      
-      const response = await authAPI.addVehicle(vehicleForm);
-      console.log('Add vehicle response:', response);
-      
-      if (response && response.success) {
-        setSuccess('Vehicle added successfully!');
-        setVehicleForm({ bikeNumber: '', bikeName: '', bikeModel: '', bikeCompany: '', vehicleType: 'BIKE' });
-        setShowVehicleForm(false);
-        fetchVehicles();
-      } else {
-        setError(response.message || 'Failed to add vehicle');
-      }
-    } catch (err) {
-      console.error('Add vehicle error:', err);
-      if (err.response?.status === 403) {
-        setError('Please complete KYC verification to add vehicles');
-      } else {
-        setError('Failed to add vehicle');
-      }
-    } finally {
-      setVehicleLoading(false);
-    }
-  };
-
-  const handleDeleteVehicle = async (vehicleId) => {
-    try {
-      setVehicleLoading(true);
-      console.log('Deactivating vehicle:', vehicleId);
-      const response = await authAPI.deactivateVehicle(vehicleId);
-      console.log('Deactivate response:', response);
-      
-      if (response && response.success) {
-        setSuccess('Vehicle deactivated successfully!');
-        fetchVehicles();
-      } else {
-        setError(response?.message || 'Failed to deactivate vehicle');
-      }
-    } catch (err) {
-      console.error('Deactivate vehicle error:', err);
-      setError('Failed to deactivate vehicle');
-    } finally {
-      setVehicleLoading(false);
-    }
-  };
-
-  // Check KYC status from localStorage
-  const [kycStatus, setKycStatus] = useState(() => {
-    return localStorage.getItem('kycStatus') || 'PENDING';
-  });
-
-  // Local notification for DigiLocker status check
-  const [digiLockerMessage, setDigiLockerMessage] = useState('');
-  const [digiLockerMessageType, setDigiLockerMessageType] = useState(''); // 'success' or 'error'
-
-  // Check DigiLocker status and update KYC accordingly
-  const checkDigiLockerStatus = async () => {
-    // Clear previous messages
-    setDigiLockerMessage('');
-    setError('');
-    setSuccess('');
-    
-    try {
-      console.log('=== CHECKING DIGILOCKER STATUS FROM PROFILE ===');
-      console.log('Checking DigiLocker status in MyProfile...');
-      
-      // Check authentication
-      const token = localStorage.getItem('token');
-      console.log('Token exists:', !!token);
-      console.log('Token length:', token?.length);
-      
-      if (!token) {
-        setDigiLockerMessage('No authentication token found. Please log in again.');
-        setDigiLockerMessageType('error');
-        return;
-      }
-      
-      console.log('Making API call to GET /digilocker/status...');
-      const response = await authAPI.getDigiLockerStatus();
-      console.log('DigiLocker status response:', response);
-      
-      if (response && response.success) {
-        const data = response.data;
-        console.log('DigiLocker status data:', data);
-        console.log('DL Verified:', data.dlVerified);
-        console.log('DL Number:', data.dlNumber);
-        console.log('Can Post Rides:', data.canPostRides);
-        
-        if (data.dlVerified) {
-          // Update KYC status to VERIFIED only if DL is actually verified
-          localStorage.setItem('kycStatus', 'VERIFIED');
-          setKycStatus('VERIFIED');
-          console.log('KYC status updated to VERIFIED based on DigiLocker verification');
-          
-          // Update user data
-          const userData = JSON.parse(localStorage.getItem('user') || '{}');
-          userData.kycStatus = 'VERIFIED';
-          userData.dlVerified = true;
-          userData.canPostRides = data.canPostRides;
-          localStorage.setItem('user', JSON.stringify(userData));
-          
-          // Show local success message
-          setDigiLockerMessage(`DigiLocker verification completed! DL: ${data.dlNumber || 'Verified'}. You can now add vehicles.`);
-          setDigiLockerMessageType('success');
-        } else {
-          // Keep status as PENDING if DL not verified
-          localStorage.setItem('kycStatus', 'PENDING');
-          setKycStatus('PENDING');
-          console.log('KYC status remains PENDING - DigiLocker not verified yet');
-          
-          // Show local info message
-          setDigiLockerMessage('DigiLocker verification not yet completed. Please complete verification first.');
-          setDigiLockerMessageType('error');
-        }
-      } else {
-        setDigiLockerMessage(response?.message || 'Failed to check DigiLocker status.');
-        setDigiLockerMessageType('error');
-      }
-    } catch (err) {
-      console.error('=== DIGILOCKER STATUS CHECK ERROR ===');
-      console.error('Error:', err);
-      console.error('Status:', err.response?.status);
-      console.error('Status Text:', err.response?.statusText);
-      console.error('Response Data:', err.response?.data);
-      
-      if (err.response?.status === 403) {
-        setDigiLockerMessage('403 Forbidden: Authentication issue. Please check your login status or contact support.');
-        setDigiLockerMessageType('error');
-      } else {
-        setDigiLockerMessage('Failed to check DigiLocker status. Please try again.');
-        setDigiLockerMessageType('error');
-      }
-    }
-  };
-
-  useEffect(() => {
-    // Check DigiLocker status on component mount
-    checkDigiLockerStatus();
-  }, []);
-
-  // Load vehicles when KYC is verified
-  useEffect(() => {
-    if (kycStatus === 'VERIFIED') {
-      fetchVehicles();
-    }
-  }, [kycStatus]);
-
-  // Auto-redirect removed - users should stay on My Profile page after verification
-  // This was causing users to be redirected to KYC success page instead of staying on profile
-
-  // Listen for KYC status changes from backend
-  useEffect(() => {
-    const handleStorageChange = (e) => {
-      if (e.key === 'kycStatus') {
-        setKycStatus(e.newValue || 'PENDING');
-      }
-    };
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
-
-  // Check if user is logged in
   useEffect(() => {
     if (!user) {
       navigate('/');
       return;
     }
-    fetchProfile();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    setEditForm(user);
+    fetchKycStatus();
+    fetchUserData();
   }, [user, navigate]);
 
-  const fetchProfile = async () => {
+  const fetchUserData = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      
-      const apiConfig = getApiConfig();
-      console.log('API Config:', apiConfig);
-      
-      // TODO: Replace with backend API when available
-      // Future implementation:
-      const token = localStorage.getItem('token');
-      if (token) {
-        try {
-          const response = await fetch(`${apiConfig.baseURL}/users/profile`, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          });
-          const data = await response.json();
-          console.log('Backend profile response:', data);
-          
-          if (data.success) {
-            setProfileData(data.data);
-            setEditForm({
-              fullName: data.data.fullName,
-              email: data.data.email,
-              phone: data.data.phone
-            });
-            return;
-          }
-        } catch (err) {
-          console.log('Backend API not available, using localStorage fallback');
-        }
-      }
-      
-      // Fallback to localStorage and user data
-      console.log('Fetching profile data from localStorage...');
-      
-      // Try to get profile from localStorage - check both keys
-      const savedUser = localStorage.getItem('user');
-      const savedProfile = localStorage.getItem('userProfile');
-      const userFromStorage = savedUser ? JSON.parse(savedUser) : null;
-      const profileFromStorage = savedProfile ? JSON.parse(savedProfile) : null;
-      
-      console.log('Found user in localStorage:', userFromStorage);
-      console.log('Found profile in localStorage:', profileFromStorage);
-      
-      // Create profile data from user info and saved profile data
-      const profileData = {
-        fullName: user?.fullName || userFromStorage?.fullName || profileFromStorage?.fullName || 'User',
-        email: user?.email || userFromStorage?.email || profileFromStorage?.email || 'user@example.com',
-        phone: user?.phone || userFromStorage?.phone || profileFromStorage?.phone || '1234567890',
-        memberSince: 'April 2026',
-        kycStatus: user?.kycStatus || userFromStorage?.kycStatus || profileFromStorage?.kycStatus || 'PENDING',
-        phoneVerified: true,
-        kycVerified: false,
-        drivingLicenseVerified: false,
-        canPostRides: false,
-        totalRidesPosted: 0,
-        totalRidesBooked: 0,
-        vehicles: [],
-        averageRating: 0.0,
-        totalReviews: 0,
-        recentReviews: [],
-        ...userFromStorage, // Override with user data from localStorage
-        ...profileFromStorage // Override with saved profile data
-      };
-      
-      setProfileData(profileData);
-      setEditForm({
-        fullName: profileData.fullName,
-        email: profileData.email,
-        phone: profileData.phone
-      });
-      
-      console.log('Profile data loaded:', profileData);
-      
-    } catch (err) {
-      console.error('Profile fetch error:', err);
-      setError('Failed to fetch profile. Please try again.');
+      await Promise.all([
+        fetchUserPosts(),
+        fetchUserRatings(),
+        fetchUserRides(),
+        fetchUserEarnings()
+      ]);
+    } catch (error) {
+      console.error('Error fetching user data:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleEditSubmit = async (e) => {
-    e.preventDefault();
-    
-    // TODO: Replace with backend API when available
-    // Future implementation:
-    // const token = localStorage.getItem('token');
-    // const response = await fetch('https://bike-cytc.onrender.com/api/users/profile', {
-    //   method: 'PUT',
-    //   headers: {
-    //     'Authorization': `Bearer ${token}`,
-    //     'Content-Type': 'application/json'
-    //   },
-    //   body: JSON.stringify(editForm)
-    // });
-    
+  const fetchUserPosts = async () => {
     try {
-      // For now, save to localStorage and update state immediately
-      console.log('Updating profile with:', editForm);
-      
-      // Save to localStorage - update both keys for consistency
-      localStorage.setItem('userProfile', JSON.stringify(editForm));
-      
-      // Also update the user key to ensure login system picks up the name
-      const updatedUser = { ...user, ...editForm };
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-      
-      // Update profileData state
-      setProfileData(prev => ({
-        ...prev,
-        ...editForm
-      }));
-      
-      // Update user in parent component
-      if (onUpdateUser) {
-        onUpdateUser(updatedUser);
+      const response = await authAPI.getUserPosts();
+      if (response.success) {
+        setUserPosts(response.data || []);
       }
-      
-      setSuccess('Profile updated successfully! (Saved locally)');
-      setEditing(false);
-      
-      console.log('Profile saved to localStorage:', editForm);
-      
-    } catch (err) {
-      console.error('Profile update error:', err);
-      setError('Failed to update profile. Please try again.');
+    } catch (error) {
+      console.error('Error fetching user posts:', error);
     }
   };
 
-  const handlePasswordChange = async (e) => {
-    e.preventDefault();
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      setError('New passwords do not match');
-      return;
-    }
-
+  const fetchUserRatings = async () => {
     try {
-      const token = localStorage.getItem('token');
-      console.log('Changing password...');
-      
-      const response = await fetch('https://bike-cytc.onrender.com/api/auth/change-password', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          currentPassword: passwordForm.currentPassword,
-          newPassword: passwordForm.newPassword
-        })
-      });
-      
-      console.log('Password change response status:', response.status);
-      
-      const data = await response.json();
-      console.log('Password change response data:', data);
-      
-      if (data.success) {
-        setSuccess('Password changed successfully!');
-        setShowPasswordModal(false);
-        setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-      } else {
-        setError(data.message || 'Failed to change password');
+      const response = await authAPI.getUserRatings();
+      if (response.success) {
+        setUserRatings(response.data || []);
       }
-    } catch (err) {
-      console.error('Password change error:', err);
-      setError('Failed to change password. Please try again.');
+    } catch (error) {
+      console.error('Error fetching user ratings:', error);
     }
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (file.type.startsWith('image/')) {
-        setAvatarFile(file);
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setPreviewImage(reader.result);
-        };
-        reader.readAsDataURL(file);
-      } else {
-        setError('Please select an image file');
+  const fetchUserRides = async () => {
+    try {
+      const response = await authAPI.getUserRides();
+      if (response.success) {
+        setUserRides(response.data || []);
       }
+    } catch (error) {
+      console.error('Error fetching user rides:', error);
     }
   };
 
-  const handleAvatarUpload = () => {
-    if (!avatarFile) {
-      setError('Please select an image first');
-      return;
-    }
-
-    // TODO: Replace with backend API when available
-    // Future implementation:
-    // const formData = new FormData();
-    // formData.append('avatar', avatarFile);
-    // const response = await fetch('/api/users/avatar', {
-    //   method: 'POST',
-    //   headers: { 'Authorization': `Bearer ${token}` },
-    //   body: formData
-    // });
-    
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64Image = reader.result;
-      
-      // Save to localStorage (temporary solution)
-      localStorage.setItem('userAvatar', base64Image);
-      
-      // Update user state
-      if (onUpdateUser) {
-        onUpdateUser({
-          ...user,
-          avatar: base64Image
-        });
+  const fetchUserEarnings = async () => {
+    try {
+      const response = await authAPI.getUserEarnings();
+      if (response.success) {
+        setUserEarnings(response.data || []);
       }
-      
-      setSuccess('Profile picture updated successfully! (Saved locally)');
-      setPreviewImage(null);
-      setAvatarFile(null);
-      
-      console.log('Avatar saved to localStorage:', base64Image.substring(0, 50) + '...');
+    } catch (error) {
+      console.error('Error fetching user earnings:', error);
+    }
+  };
+
+  const fetchKycStatus = async () => {
+    try {
+      const response = await authAPI.getKycStatus();
+      if (response.success) {
+        setKycStatus(response.data.status || 'PENDING');
+      }
+    } catch (error) {
+      console.error('Error fetching KYC status:', error);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    try {
+      const response = await authAPI.updateProfile(editForm);
+      if (response && response.success) {
+        onUpdateUser(editForm);
+        localStorage.setItem('user', JSON.stringify(editForm));
+        setEditing(false);
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+    }
+  };
+
+  const handleSubmitComplaint = async (e) => {
+    e.preventDefault();
+    const newComplaint = {
+      id: userComplaints.length + 1,
+      ...complaintForm,
+      status: 'Pending',
+      date: new Date().toISOString().split('T')[0]
     };
-    reader.readAsDataURL(avatarFile);
+    setUserComplaints([newComplaint, ...userComplaints]);
+    setComplaintForm({ title: '', description: '' });
+    setShowComplaintForm(false);
   };
 
-
-  const getStatusColor = (status) => {
-    switch (status?.toUpperCase()) {
-      case 'VERIFIED': return 'text-green-600 bg-green-100';
-      case 'SUBMITTED': return 'text-blue-600 bg-blue-100';
-      case 'PENDING': return 'text-yellow-600 bg-yellow-100';
-      case 'FAILED': return 'text-red-600 bg-red-100';
-      case 'REJECTED': return 'text-red-600 bg-red-100';
-      default: return 'text-gray-600 bg-gray-100';
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-white text-xl">Loading profile...</div>
-      </div>
-    );
-  }
-
-  if (!profileData) {
-    return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-red-400 text-xl">Failed to load profile</div>
-      </div>
-    );
-  }
+  const tabs = [
+    { id: 'profile', label: 'Profile Info', icon: User },
+    { id: 'verification', label: 'Verification', icon: Shield },
+    { id: 'posts', label: 'Posts', icon: FileText },
+    { id: 'ratings', label: 'Ratings', icon: Star },
+    { id: 'rides', label: 'Rides', icon: Bike },
+    { id: 'earnings', label: 'Earnings', icon: DollarSign },
+    { id: 'complaints', label: 'Support', icon: AlertCircle }
+  ];
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white pt-20 sm:pt-24 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="bg-gray-800 rounded-2xl p-6 sm:p-8 mb-6">
-          {/* Header - Vertical Layout */}
-          <div className="text-center mb-6">
-            <h1 className="text-2xl sm:text-3xl font-bold text-white mb-4">My Profile</h1>
-            <button
-              onClick={() => setEditing(!editing)}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
-            >
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white pt-20 px-4 pb-12">
+      <div className="max-w-6xl mx-auto">
+        <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl p-8 mb-6 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full -mr-32 -mt-32"></div>
+          <div className="relative z-10 flex flex-col md:flex-row items-center gap-6">
+            <div className="relative">
+              <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center text-orange-500 text-3xl font-bold">
+                {user?.fullName?.charAt(0) || 'U'}
+              </div>
+              <button className="absolute bottom-0 right-0 w-8 h-8 bg-white rounded-full flex items-center justify-center text-orange-500 hover:bg-gray-100 transition-colors">
+                <Camera size={16} />
+              </button>
+            </div>
+            <div className="flex-1 text-center md:text-left">
+              <h1 className="text-3xl font-bold text-white mb-2">{user?.fullName || 'User'}</h1>
+              <p className="text-orange-100 mb-3">{user?.email || 'No email'}</p>
+              <div className="flex flex-wrap gap-2 justify-center md:justify-start">
+                <span className="px-3 py-1 bg-white bg-opacity-20 rounded-full text-sm flex items-center gap-1">
+                  <Phone size={14} /> {user?.phone || 'N/A'}
+                </span>
+                <span className={`px-3 py-1 rounded-full text-sm flex items-center gap-1 ${kycStatus === 'VERIFIED' ? 'bg-green-500' : 'bg-yellow-500'}`}>
+                  <Shield size={14} /> {kycStatus}
+                </span>
+              </div>
+            </div>
+            <button onClick={() => setEditing(!editing)} className="px-6 py-3 bg-white text-orange-500 rounded-lg font-medium hover:bg-gray-100 transition-colors flex items-center gap-2">
               {editing ? <X size={20} /> : <Edit2 size={20} />}
               {editing ? 'Cancel' : 'Edit Profile'}
             </button>
           </div>
+        </div>
 
-          {/* Profile Info */}
-          <div className="text-center mb-6">
-            <div className="relative inline-flex justify-center mb-4">
-              <div className="w-24 h-24 bg-gray-700 rounded-full flex items-center justify-center overflow-hidden">
-                {previewImage ? (
-                  <img src={previewImage} alt="Preview" className="w-full h-full object-cover" />
-                ) : user?.avatar ? (
-                  <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
-                ) : localStorage.getItem('userAvatar') ? (
-                  <img src={localStorage.getItem('userAvatar')} alt="Profile" className="w-full h-full object-cover" />
-                ) : (
-                  <User size={40} className="text-gray-400" />
-                )}
-              </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                className="hidden"
-              />
-              <button 
-                onClick={() => fileInputRef.current?.click()}
-                className="absolute bottom-0 right-0 bg-primary-orange p-2 rounded-full hover:bg-orange-600 transition-colors"
-              >
-                <Camera size={16} />
+        <div className="bg-gray-800 rounded-2xl p-2 mb-6 overflow-x-auto">
+          <div className="flex gap-2 min-w-max">
+            {tabs.map(tab => (
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 px-4 py-3 rounded-lg font-medium transition-all whitespace-nowrap ${activeTab === tab.id ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg' : 'text-gray-300 hover:bg-gray-700'}`}>
+                <tab.icon size={18} />
+                {tab.label}
               </button>
-            </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-gray-800 rounded-2xl p-6 min-h-[400px]">
+          {activeTab === 'profile' && (
             <div>
-              <h2 className="text-2xl font-bold">{profileData.fullName}</h2>
-              <p className="text-gray-400">Member since {profileData.memberSince}</p>
-              {previewImage && (
-                <div className="mt-2 flex gap-2">
-                  <button
-                    onClick={handleAvatarUpload}
-                    className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 transition-colors"
-                  >
-                    Save Photo
-                  </button>
-                  <button
-                    onClick={() => {
-                      setPreviewImage(null);
-                      setAvatarFile(null);
-                    }}
-                    className="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-700 transition-colors"
-                  >
-                    Cancel
-                  </button>
+              <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+                <User className="text-orange-500" />
+                Profile Information
+              </h3>
+              {editing ? (
+                <div className="space-y-4">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Full Name</label>
+                      <input type="text" value={editForm.fullName || ''} onChange={(e) => setEditForm({...editForm, fullName: e.target.value})} className="w-full bg-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
+                      <input type="email" value={editForm.email || ''} onChange={(e) => setEditForm({...editForm, email: e.target.value})} className="w-full bg-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Phone</label>
+                    <input type="tel" value={editForm.phone || ''} onChange={(e) => setEditForm({...editForm, phone: e.target.value})} className="w-full bg-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500" />
+                  </div>
+                  <div className="flex gap-4 pt-4">
+                    <button onClick={handleSaveProfile} className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+                      <Save size={20} />
+                      Save Changes
+                    </button>
+                    <button onClick={() => setEditing(false)} className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid md:grid-cols-2 gap-4">
+                  {[
+                    { label: 'Full Name', value: user?.fullName, icon: User },
+                    { label: 'Email', value: user?.email, icon: Mail },
+                    { label: 'Phone', value: user?.phone, icon: Phone },
+                    { label: 'Member Since', value: user?.memberSince || 'N/A', icon: Calendar }
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-center gap-4 p-4 bg-gray-700 rounded-lg">
+                      <div className="p-3 bg-orange-500 bg-opacity-20 rounded-lg">
+                        <item.icon size={24} className="text-orange-500" />
+                      </div>
+                      <div>
+                        <p className="text-gray-400 text-sm">{item.label}</p>
+                        <p className="text-white font-medium">{item.value || 'N/A'}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
-          </div>
+          )}
 
-          {/* Edit Form */}
-          {editing ? (
-            <form onSubmit={handleEditSubmit} className="space-y-4">
+          {activeTab === 'verification' && (
+            <div>
+              <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+                <Shield className="text-orange-500" />
+                KYC Verification & Vehicle Management
+              </h3>
               <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-2">Full Name</label>
-                  <input
-                    type="text"
-                    value={editForm.fullName}
-                    onChange={(e) => setEditForm({...editForm, fullName: e.target.value})}
-                    className="w-full bg-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-orange"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-2">Email</label>
-                  <input
-                    type="email"
-                    value={editForm.email}
-                    onChange={(e) => setEditForm({...editForm, email: e.target.value})}
-                    className="w-full bg-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-orange"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-2">Phone</label>
-                  <input
-                    type="tel"
-                    value={editForm.phone}
-                    onChange={(e) => setEditForm({...editForm, phone: e.target.value})}
-                    className="w-full bg-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-orange"
-                  />
-                </div>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <button
-                  type="submit"
-                  className="w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
-                >
-                  Save Changes
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setEditing(false)}
-                  className="w-full sm:w-auto bg-gray-700 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          ) : (
-            <div className="space-y-4">
-              <div className="space-y-4">
-                <div className="flex items-center justify-center gap-3">
-                  <Mail size={20} className="text-gray-400" />
-                  <span className="text-gray-300">{profileData.email}</span>
-                </div>
-                <div className="flex items-center justify-center gap-3">
-                  <Phone size={20} className="text-gray-400" />
-                  <span className="text-gray-300">{profileData.phone}</span>
-                </div>
-                <div className="flex items-center justify-center gap-3">
-                  <Calendar size={20} className="text-gray-400" />
-                  <span className="text-gray-300">Member since {profileData.memberSince}</span>
+                <div className="p-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl text-center">
+                  <div className="w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Smartphone size={40} className="text-white" />
+                  </div>
+                  <h4 className="text-2xl font-bold text-white mb-3">Use Our Mobile App</h4>
+                  <p className="text-white text-opacity-90 mb-6 max-w-md mx-auto">
+                    KYC verification and vehicle management are available exclusively on our mobile app for enhanced security and better document scanning.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                    <button className="flex items-center justify-center gap-2 bg-white text-blue-600 px-6 py-3 rounded-lg font-medium hover:bg-gray-100 transition-colors">
+                      <ExternalLink size={20} />
+                      Download App
+                    </button>
+                  </div>
+                  <div className="mt-6 p-4 bg-white bg-opacity-10 rounded-lg">
+                    <p className="text-white text-sm mb-2">Current KYC Status:</p>
+                    <span className={`inline-block px-4 py-2 rounded-full text-sm font-medium ${kycStatus === 'VERIFIED' ? 'bg-green-500' : kycStatus === 'PENDING' ? 'bg-yellow-500' : 'bg-red-500'}`}>
+                      {kycStatus}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
           )}
-        </div>
 
-        {/* Verification Status */}
-        <div className="bg-gray-800 rounded-2xl p-8 mb-6">
-          <h3 className="text-xl font-bold mb-6">Verification Status</h3>
-          
-          {/* DigiLocker Verification Section */}
-          <div className="bg-gray-700 rounded-lg p-6 mb-6">
-            {/* Heading */}
-            <div className="flex items-center gap-3 mb-4">
-              <Shield size={20} className="text-gray-400" />
-              <span className="font-semibold text-lg">DigiLocker Verification</span>
-            </div>
-            
-            {/* Status Badge */}
-            <div className="mb-4">
-              {kycStatus === 'PENDING' ? (
-                <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor('PENDING')}`}>
-                  DigiLocker Pending
-                </span>
-              ) : kycStatus === 'VERIFIED' ? (
-                <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor('VERIFIED')}`}>
-                  DigiLocker Verified
-                </span>
-              ) : (
-                <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor('PENDING')}`}>
-                  DigiLocker Pending
-                </span>
-              )}
-            </div>
-            
-            {/* Buttons - Below Heading */}
-            <div className="space-y-2 mb-4">
-              {kycStatus === 'PENDING' ? (
-                <>
-                  <button
-                    onClick={() => navigate('/kyc')}
-                    className="w-full flex items-center justify-center gap-2 px-3 py-1 bg-orange-500 text-white rounded-full text-sm hover:bg-orange-600 transition-colors"
-                  >
-                    Complete Verification
-                    <ArrowRight size={14} />
-                  </button>
-                  <button
-                    onClick={checkDigiLockerStatus}
-                    className="w-full flex items-center justify-center gap-2 px-3 py-1 bg-blue-500 text-white rounded-full text-sm hover:bg-blue-600 transition-colors"
-                  >
-                    Check Status
-                  </button>
-                </>
-              ) : kycStatus === 'VERIFIED' ? (
-                <button
-                  onClick={checkDigiLockerStatus}
-                  className="w-full flex items-center justify-center gap-2 px-3 py-1 bg-blue-500 text-white rounded-full text-sm hover:bg-blue-600 transition-colors"
-                >
-                  Refresh
-                </button>
-              ) : (
-                <>
-                  <button
-                    onClick={() => navigate('/kyc')}
-                    className="w-full flex items-center justify-center gap-2 px-3 py-1 bg-orange-500 text-white rounded-full text-sm hover:bg-orange-600 transition-colors"
-                  >
-                    Complete Verification
-                    <ArrowRight size={14} />
-                  </button>
-                  <button
-                    onClick={checkDigiLockerStatus}
-                    className="w-full flex items-center justify-center gap-2 px-3 py-1 bg-blue-500 text-white rounded-full text-sm hover:bg-blue-600 transition-colors"
-                  >
-                    Check Status
-                  </button>
-                </>
-              )}
-            </div>
-            
-            {/* Local Notification - Right Below Buttons */}
-            {digiLockerMessage && (
-              <div className={`p-3 rounded-lg text-sm ${
-                digiLockerMessageType === 'success' 
-                  ? 'bg-green-900 text-green-200 border border-green-700' 
-                  : 'bg-red-900 text-red-200 border border-red-700'
-              }`}>
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-start gap-2">
-                    {digiLockerMessageType === 'success' ? (
-                      <svg className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    ) : (
-                      <svg className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    )}
-                    <span className="text-sm">{digiLockerMessage}</span>
-                  </div>
-                  <button
-                    onClick={() => setDigiLockerMessage('')}
-                    className="flex-shrink-0 hover:opacity-70 transition-opacity"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
+          {activeTab === 'posts' && (
+            <div>
+              <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+                <FileText className="text-orange-500" />
+                My Posts
+              </h3>
+              {loading ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto mb-4"></div>
+                  <p className="text-gray-400">Loading posts...</p>
                 </div>
-              </div>
-            )}
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex items-center justify-between p-4 bg-gray-700 rounded-lg">
-              <div className="flex items-center gap-3">
-                <Phone size={20} className="text-gray-400" />
-                <span>Phone Verification</span>
-              </div>
-              <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor(profileData.phoneVerified ? 'VERIFIED' : 'PENDING')}`}>
-                {profileData.phoneVerified ? 'Verified' : 'Pending'}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Vehicle Management - Only show when KYC is verified */}
-        {kycStatus === 'VERIFIED' ? (
-          <div className="bg-gray-800 rounded-2xl p-8 mb-6">
-            {/* Header - Vertical Layout */}
-            <div className="text-center mb-6">
-              <div className="inline-flex items-center justify-center w-12 h-12 bg-orange-500/20 rounded-full mb-3">
-                <Zap size={24} className="text-orange-400" />
-              </div>
-              <h3 className="text-xl font-bold text-white mb-2">My Vehicles</h3>
-              <p className="text-gray-400 text-sm">Manage your vehicles for ride sharing</p>
-            </div>
-
-            {/* Add Vehicle Form */}
-            {showVehicleForm && (
-              <div className="bg-gray-700 rounded-lg p-4 mb-6">
-                <h4 className="text-lg font-semibold mb-4">Add New Vehicle</h4>
+              ) : userPosts.length === 0 ? (
+                <div className="text-center py-12">
+                  <FileText size={48} className="mx-auto text-gray-600 mb-4" />
+                  <p className="text-gray-400">No posts yet</p>
+                </div>
+              ) : (
                 <div className="space-y-4">
-                  <input
-                    type="text"
-                    placeholder="Bike Number (e.g., UP80AB1234)"
-                    value={vehicleForm.bikeNumber}
-                    onChange={(e) => setVehicleForm({...vehicleForm, bikeNumber: e.target.value})}
-                    className="w-full bg-gray-600 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Bike Name (e.g., Black Beast)"
-                    value={vehicleForm.bikeName}
-                    onChange={(e) => setVehicleForm({...vehicleForm, bikeName: e.target.value})}
-                    className="w-full bg-gray-600 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  />
-                  <select
-                    value={vehicleForm.vehicleType}
-                    onChange={(e) => setVehicleForm({...vehicleForm, vehicleType: e.target.value})}
-                    className="w-full bg-gray-600 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  >
-                    <option value="BIKE">Bike</option>
-                    <option value="SCOOTER">Scooter</option>
-                    <option value="SCOOTY">Scooty</option>
-                  </select>
-                  <input
-                    type="text"
-                    placeholder="Bike Model (e.g., Splendor Plus)"
-                    value={vehicleForm.bikeModel}
-                    onChange={(e) => setVehicleForm({...vehicleForm, bikeModel: e.target.value})}
-                    className="w-full bg-gray-600 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Bike Company (e.g., Hero)"
-                    value={vehicleForm.bikeCompany}
-                    onChange={(e) => setVehicleForm({...vehicleForm, bikeCompany: e.target.value})}
-                    className="w-full bg-gray-600 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  />
-                </div>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <button
-                    onClick={handleAddVehicle}
-                    disabled={vehicleLoading}
-                    className="w-full sm:w-auto bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold disabled:opacity-50 transition-colors"
-                  >
-                    {vehicleLoading ? 'Adding...' : 'Add Vehicle'}
-                  </button>
-                  <button
-                    onClick={() => setShowVehicleForm(false)}
-                    className="w-full sm:w-auto bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Vehicles List */}
-            {vehicles.length > 0 ? (
-              <div className="space-y-4">
-                {vehicles.map((vehicle) => (
-                  <div key={vehicle.id} className="bg-gray-700 rounded-lg p-4 flex items-center justify-between">
-                    <div>
-                      <h4 className="font-semibold text-lg">{vehicle.bikeName}</h4>
-                      <p className="text-gray-400">{vehicle.bikeNumber}</p>
-                      <p className="text-sm text-gray-500">{vehicle.bikeModel} - {vehicle.bikeCompany}</p>
+                  {userPosts.map(post => (
+                    <div key={post.id} className="bg-gray-700 rounded-lg p-6">
+                      <div className="flex justify-between items-start mb-4">
+                        <h4 className="text-xl font-semibold text-white">{post.title}</h4>
+                        <span className="text-sm text-gray-400">{new Date(post.createdAt).toLocaleDateString()}</span>
+                      </div>
+                      <p className="text-gray-300 mb-4">{post.content}</p>
+                      <div className="flex items-center gap-4 text-sm text-gray-400">
+                        <span className="flex items-center gap-1">
+                          <MessageSquare size={16} />
+                          {post.comments || 0} comments
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Star size={16} />
+                          {post.likes || 0} likes
+                        </span>
+                      </div>
                     </div>
-                    <button
-                      onClick={() => handleDeleteVehicle(vehicle.id)}
-                      disabled={vehicleLoading}
-                      className="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
-                    >
-                      Deactivate
-                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'ratings' && (
+            <div>
+              <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+                <Star className="text-orange-500" />
+                My Ratings
+              </h3>
+              {loading ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto mb-4"></div>
+                  <p className="text-gray-400">Loading ratings...</p>
+                </div>
+              ) : userRatings.length === 0 ? (
+                <div className="text-center py-12">
+                  <Star size={48} className="mx-auto text-gray-600 mb-4" />
+                  <p className="text-gray-400">No ratings yet</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="bg-gray-700 rounded-lg p-6 mb-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="text-3xl font-bold text-white">
+                          {userRatings.reduce((acc, r) => acc + r.rating, 0) / userRatings.length || 0}
+                        </h4>
+                        <p className="text-gray-400">Average Rating</p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {[1, 2, 3, 4, 5].map(star => (
+                          <Star
+                            key={star}
+                            size={24}
+                            className={star <= (userRatings.reduce((acc, r) => acc + r.rating, 0) / userRatings.length || 0) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600'}
+                          />
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                ))}
+                  {userRatings.map(rating => (
+                    <div key={rating.id} className="bg-gray-700 rounded-lg p-6">
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <h4 className="text-lg font-semibold text-white">{rating.fromUser}</h4>
+                          <p className="text-sm text-gray-400">{new Date(rating.createdAt).toLocaleDateString()}</p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {[1, 2, 3, 4, 5].map(star => (
+                            <Star
+                              key={star}
+                              size={16}
+                              className={star <= rating.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600'}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <p className="text-gray-300">{rating.comment}</p>
+                      <p className="text-sm text-gray-400 mt-2">Ride: {rating.rideId}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'rides' && (
+            <div>
+              <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+                <Bike className="text-orange-500" />
+                My Rides
+              </h3>
+              {loading ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto mb-4"></div>
+                  <p className="text-gray-400">Loading rides...</p>
+                </div>
+              ) : userRides.length === 0 ? (
+                <div className="text-center py-12">
+                  <Bike size={48} className="mx-auto text-gray-600 mb-4" />
+                  <p className="text-gray-400">No rides yet</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {userRides.map(ride => (
+                    <div key={ride.id} className="bg-gray-700 rounded-lg p-6">
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <h4 className="text-lg font-semibold text-white">
+                            {ride.from} → {ride.to}
+                          </h4>
+                          <p className="text-sm text-gray-400">
+                            {new Date(ride.date).toLocaleDateString()} at {new Date(ride.date).toLocaleTimeString()}
+                          </p>
+                        </div>
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                          ride.status === 'completed' ? 'bg-green-900 text-green-300' :
+                          ride.status === 'cancelled' ? 'bg-red-900 text-red-300' :
+                          'bg-yellow-900 text-yellow-300'
+                        }`}>
+                          {ride.status}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div className="flex items-center gap-2 text-gray-300">
+                          <Clock size={16} />
+                          {ride.duration}
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-300">
+                          <MapPin size={16} />
+                          {ride.distance} km
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-300">
+                          <DollarSign size={16} />
+                          ₹{ride.amount}
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-300">
+                          <User size={16} />
+                          {ride.driverName}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'earnings' && (
+            <div>
+              <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+                <DollarSign className="text-orange-500" />
+                My Earnings
+              </h3>
+              {loading ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto mb-4"></div>
+                  <p className="text-gray-400">Loading earnings...</p>
+                </div>
+              ) : userEarnings.length === 0 ? (
+                <div className="text-center py-12">
+                  <DollarSign size={48} className="mx-auto text-gray-600 mb-4" />
+                  <p className="text-gray-400">No earnings yet</p>
+                </div>
+              ) : (
+                <div>
+                  <div className="bg-gray-700 rounded-lg p-6 mb-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="text-center">
+                        <h4 className="text-3xl font-bold text-green-400">
+                          ₹{userEarnings.reduce((acc, e) => acc + e.amount, 0).toLocaleString()}
+                        </h4>
+                        <p className="text-gray-400">Total Earnings</p>
+                      </div>
+                      <div className="text-center">
+                        <h4 className="text-3xl font-bold text-blue-400">
+                          ₹{userEarnings.filter(e => new Date(e.date).getMonth() === new Date().getMonth()).reduce((acc, e) => acc + e.amount, 0).toLocaleString()}
+                        </h4>
+                        <p className="text-gray-400">This Month</p>
+                      </div>
+                      <div className="text-center">
+                        <h4 className="text-3xl font-bold text-orange-400">
+                          {userEarnings.length}
+                        </h4>
+                        <p className="text-gray-400">Total Trips</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    {userEarnings.map(earning => (
+                      <div key={earning.id} className="bg-gray-700 rounded-lg p-6">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h4 className="text-lg font-semibold text-white">
+                              {earning.from} → {earning.to}
+                            </h4>
+                            <p className="text-sm text-gray-400">
+                              {new Date(earning.date).toLocaleDateString()} at {new Date(earning.date).toLocaleTimeString()}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-2xl font-bold text-green-400">₹{earning.amount}</p>
+                            <p className="text-sm text-gray-400">{earning.type}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'complaints' && (
+            <div>
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-bold text-white flex items-center gap-2">
+                  <AlertCircle className="text-orange-500" />
+                  Support & Complaints
+                </h3>
+                <button onClick={() => setShowComplaintForm(!showComplaintForm)} className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                  <MessageSquare size={18} />
+                  New Complaint
+                </button>
               </div>
-            ) : (
-              <div className="text-center py-8 text-gray-400">
-                <Zap size={48} className="mx-auto mb-4 opacity-50" />
-                <p>No vehicles added yet</p>
-                <p className="text-sm">Click "Add Vehicle" to get started</p>
-              </div>
-            )}
 
-            {/* Add Vehicle Button - Below Section */}
-            <div className="mt-6 pt-6 border-t border-gray-700">
-              <button
-                onClick={() => setShowVehicleForm(!showVehicleForm)}
-                className="w-full flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-3 rounded-lg font-semibold transition-colors"
-              >
-                <Plus size={16} />
-                {showVehicleForm ? 'Cancel' : 'Add Vehicle'}
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="bg-gray-800 rounded-2xl p-8 mb-6">
-            <div className="text-center py-8">
-              <Zap size={48} className="mx-auto mb-4 text-gray-500" />
-              <h3 className="text-xl font-bold mb-2">Vehicle Management</h3>
-              <p className="text-gray-400 mb-2">Complete verification to unlock your ride-sharing journey</p>
-              <p className="text-orange-400 text-sm mb-4">Add vehicles, post rides, and start earning! Your bike awaits its next adventure. </p>
-              <button
-                onClick={() => navigate('/kyc')}
-                className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-6 py-3 rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all transform hover:scale-105"
-              >
-                Complete Verification
-              </button>
-            </div>
-          </div>
-        )}
+              {showComplaintForm && (
+                <form onSubmit={handleSubmitComplaint} className="mb-6 p-6 bg-gray-700 rounded-lg">
+                  <h4 className="text-white font-medium mb-4">File a Complaint</h4>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Title</label>
+                      <input type="text" value={complaintForm.title} onChange={(e) => setComplaintForm({...complaintForm, title: e.target.value})} className="w-full bg-gray-600 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500" required />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Description</label>
+                      <textarea value={complaintForm.description} onChange={(e) => setComplaintForm({...complaintForm, description: e.target.value})} className="w-full bg-gray-600 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 h-32" required />
+                    </div>
+                    <div className="flex gap-3">
+                      <button type="submit" className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+                        <Send size={18} />
+                        Submit Complaint
+                      </button>
+                      <button type="button" onClick={() => setShowComplaintForm(false)} className="bg-gray-600 hover:bg-gray-500 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              )}
 
-        {/* Change Password */}
-        <div className="bg-gray-800 rounded-2xl p-8 mb-6">
-          {/* Header - Vertical Layout */}
-          <div className="text-center mb-6">
-            <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-500/20 rounded-full mb-3">
-              <Lock size={24} className="text-blue-400" />
+              {userComplaints.length === 0 ? (
+                <div className="text-center py-12">
+                  <AlertCircle size={48} className="mx-auto text-gray-600 mb-4" />
+                  <p className="text-gray-400">No complaints filed</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {userComplaints.map(complaint => (
+                    <div key={complaint.id} className="p-4 bg-gray-700 rounded-lg">
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex-1">
+                          <h4 className="text-white font-medium text-lg">{complaint.title}</h4>
+                          <p className="text-gray-300 text-sm mt-1">{complaint.description}</p>
+                          <p className="text-gray-400 text-xs mt-2">{complaint.date}</p>
+                        </div>
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${complaint.status === 'Resolved' ? 'bg-green-900 text-green-300' : complaint.status === 'Pending' ? 'bg-yellow-900 text-yellow-300' : 'bg-red-900 text-red-300'}`}>
+                          {complaint.status}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-            <h3 className="text-xl font-bold text-white mb-2">Security</h3>
-            <p className="text-gray-400 text-sm">Manage your account security settings</p>
-          </div>
-          
-          <div className="text-center mb-6">
-            <p className="text-gray-400">Last password change: Not available</p>
-          </div>
-          
-          {/* Change Password Button - Below Section */}
-          <div className="mt-6 pt-6 border-t border-gray-700">
-            <button
-              onClick={() => setShowPasswordModal(true)}
-              className="w-full flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-3 rounded-lg font-semibold transition-colors"
-            >
-              <Lock size={16} />
-              Change Password
-            </button>
-          </div>
+          )}
         </div>
-
-        {/* Riding Stats */}
-        <div className="bg-gray-800 rounded-2xl p-8 mb-6">
-          <h3 className="text-xl font-bold mb-6">Riding Statistics</h3>
-          <div className="space-y-4">
-            <div className="text-center bg-gray-700 rounded-lg p-4">
-              <Star size={40} className="text-primary-orange mx-auto mb-3" />
-              <div className="text-2xl font-bold text-white">{profileData.totalRidesPosted}</div>
-              <div className="text-gray-400">Rides Posted</div>
-            </div>
-            <div className="text-center bg-gray-700 rounded-lg p-4">
-              <User size={40} className="text-primary-orange mx-auto mb-3" />
-              <div className="text-2xl font-bold text-white">{profileData.totalRidesBooked}</div>
-              <div className="text-gray-400">Rides Booked</div>
-            </div>
-            <div className="text-center bg-gray-700 rounded-lg p-4">
-              <Star size={40} className="text-primary-orange mx-auto mb-3" />
-              <div className="text-2xl font-bold text-white">{profileData.averageRating.toFixed(1)}</div>
-              <div className="text-gray-400">Average Rating</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Password Change Modal */}
-        {showPasswordModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-gray-800 rounded-2xl p-8 max-w-md w-full mx-4">
-              <h3 className="text-xl font-bold mb-6">Change Password</h3>
-              <form onSubmit={handlePasswordChange} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-2">Current Password</label>
-                  <input
-                    type="password"
-                    value={passwordForm.currentPassword}
-                    onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
-                    className="w-full bg-gray-700 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-orange"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-2">New Password</label>
-                  <input
-                    type="password"
-                    value={passwordForm.newPassword}
-                    onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
-                    className="w-full bg-gray-700 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-orange"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-2">Confirm New Password</label>
-                  <input
-                    type="password"
-                    value={passwordForm.confirmPassword}
-                    onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
-                    className="w-full bg-gray-700 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-orange"
-                    required
-                  />
-                </div>
-                <div className="flex gap-4">
-                  <button
-                    type="submit"
-                    className="bg-primary-orange text-white px-6 py-2 rounded-lg hover:bg-orange-600 transition-colors"
-                  >
-                    Change Password
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowPasswordModal(false)}
-                    className="bg-gray-700 text-white px-6 py-2 rounded-lg hover:bg-gray-600 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        
-        {/* Notifications */}
-        {error && (
-          <div className="fixed top-4 right-4 bg-red-600 text-white px-6 py-3 rounded-lg shadow-lg z-50">
-            {error}
-            <button onClick={() => setError('')} className="ml-4">
-              <X size={20} />
-            </button>
-          </div>
-        )}
-        {success && (
-          <div className="fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50">
-            {success}
-            <button onClick={() => setSuccess('')} className="ml-4">
-              <X size={20} />
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );

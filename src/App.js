@@ -1,39 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Home from './pages/Home';
-import BrowseRides from './pages/BrowseRides';
-import RideDetail from './pages/RideDetail';
-import PostRide from './pages/PostRide';
 import MyProfile from './pages/MyProfile';
-import KYCPage from './pages/KYCPage';
-import KYCSuccess from './pages/KYCSuccess';
-import KYCFailure from './pages/KYCFailure';
 import LoginModal from './LoginModal';
 import SignupModal from './SignupModal';
 import ProfileSection from './components/ProfileSection';
 import Notification from './components/Notification';
+// Admin Panel
+import AdminDashboard from './pages/admin/AdminDashboard';
+import UserManagement from './pages/admin/UserManagement';
+import DriverKYC from './pages/admin/DriverKYC';
+import RideManagement from './pages/admin/RideManagement';
 
 const App = () => {
-  // Clear any old demo user data on app start
-  React.useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      try {
-        const userData = JSON.parse(storedUser);
-        if (userData.fullName === 'Demo User') {
-          console.log('Clearing old demo user data...');
-          localStorage.removeItem('user');
-          localStorage.removeItem('token');
-        }
-      } catch (error) {
-        console.log('Error parsing stored user data, clearing...');
-        localStorage.removeItem('user');
-        localStorage.removeItem('token');
-      }
-    }
-  }, []);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const [user, setUser] = useState(() => {
     // Initialize user state from localStorage to prevent logout on refresh
@@ -47,7 +30,6 @@ const App = () => {
       }
       return null;
     } catch (error) {
-      console.log('Error parsing stored user on init:', error);
       // Clear corrupted data
       localStorage.removeItem('user');
       localStorage.removeItem('token');
@@ -90,6 +72,9 @@ const App = () => {
       localStorage.removeItem('user');
       setUser(null);
       
+      // Navigate to home page after logout
+      navigate('/');
+      
       // Show success notification
       setNotification({
         message: 'Logged out successfully!',
@@ -103,10 +88,8 @@ const App = () => {
   // Sync user state with localStorage
   useEffect(() => {
     if (user) {
-      console.log('App.js - Syncing user to localStorage:', user);
       localStorage.setItem('user', JSON.stringify(user));
     } else {
-      console.log('App.js - Clearing user from localStorage');
       localStorage.removeItem('user');
     }
   }, [user]);
@@ -120,7 +103,7 @@ const App = () => {
   };
 
   return (
-    <BrowserRouter>
+    <>
       {showLogin && (
         <LoginModal
           onClose={() => setShowLogin(false)}
@@ -136,17 +119,36 @@ const App = () => {
         />
       )}
 
-      <Navbar {...navProps} />
-
       <Routes>
-        <Route path="/" element={<Home user={user} onSignupClick={() => setShowSignup(true)} onLoginClick={() => setShowLogin(true)} onProfileUpdate={handleUserUpdate} />} />
-        <Route path="/browse" element={<BrowseRides user={user} onLoginClick={() => setShowLogin(true)} />} />
-        <Route path="/rides/:id" element={<RideDetail user={user} onLoginClick={() => setShowLogin(true)} />} />
-        <Route path="/post-ride" element={<PostRide user={user} onLoginClick={() => setShowLogin(true)} />} />
-        <Route path="/my-profile" element={<MyProfile user={user} onUpdateUser={handleUserUpdate} />} />
-        <Route path="/kyc" element={<KYCPage user={user} />} />
-        <Route path="/kyc/success" element={<KYCSuccess />} />
-        <Route path="/kyc/failure" element={<KYCFailure />} />
+        {/* Regular App Routes with Navbar and Footer */}
+        <Route path="/" element={
+          <>
+            <Navbar {...navProps} />
+            <Home
+              user={user}
+              onLoginClick={() => setShowLogin(true)}
+              onSignupClick={() => setShowSignup(true)}
+              onProfileUpdate={handleUserUpdate}
+            />
+            <Footer />
+          </>
+        } />
+        <Route path="/profile" element={
+          <>
+            <Navbar {...navProps} />
+            <MyProfile
+              user={user}
+              onUpdateUser={handleUserUpdate}
+            />
+            <Footer />
+          </>
+        } />
+        
+        {/* Admin Panel Routes - No Navbar or Footer */}
+        <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        <Route path="/admin/users" element={<UserManagement />} />
+        <Route path="/admin/driver-kyc" element={<DriverKYC />} />
+        <Route path="/admin/rides" element={<RideManagement />} />
       </Routes>
 
       {/* Profile Section */}
@@ -166,9 +168,7 @@ const App = () => {
           onClose={() => setNotification(null)}
         />
       )}
-
-      <Footer />
-    </BrowserRouter>
+    </>
   );
 };
 

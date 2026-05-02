@@ -15,13 +15,10 @@ const Navbar = ({ user, onLoginClick, onSignupClick, onLogout, onProfileClick })
 
   const publicNavLinks = [
     { label: 'Home', to: '/' },
-    { label: 'Browse Rides', to: '/browse' },
-    { label: 'Post a Ride', to: '/post-ride' },
   ];
 
   const privateNavLinks = [
-    { label: 'My Profile', to: '/my-profile' },
-    { label: 'KYC', to: '/kyc' },
+    { label: 'My Profile', to: '/profile' },
   ];
 
   const isActive = (path) => location.pathname === path;
@@ -54,7 +51,7 @@ const Navbar = ({ user, onLoginClick, onSignupClick, onLogout, onProfileClick })
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                     isActive(to)
                       ? 'text-orange-DEFAULT bg-orange-DEFAULT bg-opacity-10'
-                      : 'text-gray-300 hover:text-white hover:bg-white hover:bg-opacity-5'
+                      : 'text-gray-300 hover:text-white hover:bg-gray-700 hover:bg-opacity-50'
                   }`}
                 >
                   {label}
@@ -69,7 +66,7 @@ const Navbar = ({ user, onLoginClick, onSignupClick, onLogout, onProfileClick })
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                     isActive(to)
                       ? 'text-orange-DEFAULT bg-orange-DEFAULT bg-opacity-10'
-                      : 'text-gray-300 hover:text-white hover:bg-white hover:bg-opacity-5'
+                      : 'text-gray-300 hover:text-white hover:bg-gray-700 hover:bg-opacity-50'
                   }`}
                 >
                   {label}
@@ -124,7 +121,7 @@ const Navbar = ({ user, onLoginClick, onSignupClick, onLogout, onProfileClick })
               to={to}
               onClick={() => setIsMenuOpen(false)}
               className={`block px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                isActive(to) ? 'text-orange-DEFAULT bg-orange-DEFAULT bg-opacity-10' : 'text-gray-300 hover:text-white hover:bg-white hover:bg-opacity-5'
+                isActive(to) ? 'text-orange-DEFAULT bg-orange-DEFAULT bg-opacity-10' : 'text-gray-300 hover:text-white hover:bg-gray-700 hover:bg-opacity-50'
               }`}
             >
               {label}
@@ -138,7 +135,7 @@ const Navbar = ({ user, onLoginClick, onSignupClick, onLogout, onProfileClick })
               to={to}
               onClick={() => setIsMenuOpen(false)}
               className={`block px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                isActive(to) ? 'text-orange-DEFAULT bg-orange-DEFAULT bg-opacity-10' : 'text-gray-300 hover:text-white hover:bg-white hover:bg-opacity-5'
+                isActive(to) ? 'text-orange-DEFAULT bg-orange-DEFAULT bg-opacity-10' : 'text-gray-300 hover:text-white hover:bg-gray-700 hover:bg-opacity-50'
               }`}
             >
               {label}
